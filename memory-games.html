@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เกมจับคู่">
+<title>เกมจับคู่ของหนู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+
+:root {
+  --bg-1: #FFF5E6;
+  --bg-2: #FFE8D6;
+  --primary: #FF7E5F;
+  --primary-dark: #E85D3C;
+  --accent: #4ECDC4;
+  --accent-dark: #3BA39C;
+  --player1: #FF6B9D;
+  --player2: #6BCBFF;
+  --text: #2D3142;
+  --card-back-1: #FF9A8B;
+  --card-back-2: #FF6A88;
+  --shadow: 0 8px 24px rgba(45, 49, 66, 0.12);
+  --shadow-lg: 0 16px 40px rgba(45, 49, 66, 0.18);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 126, 95, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(78, 205, 196, 0.10) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.timer {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted { opacity: 0.5; }
+
+.players {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.player {
+  flex: 1;
+  background: white;
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s;
+  border: 3px solid transparent;
+}
+
+.player.active {
+  transform: translateY(-4px);
+  border-color: currentColor;
+  box-shadow: var(--shadow-lg);
+}
+
+.player.p1 { color: var(--player1); }
+.player.p2 { color: var(--player2); }
+
+.player-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.player-info { flex: 1; min-width: 0; }
+
+.player-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.player-score {
+  font-size: 22px;
+  font-weight: 700;
+  color: currentColor;
+  line-height: 1.1;
+}
+
+.player-time {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: currentColor;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px solid currentColor;
+  min-width: 56px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.player-time.low {
+  animation: pulseLow 0.5s ease infinite alternate;
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+@keyframes pulseLow {
+  to { transform: scale(1.1); }
+}
+
+.board {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), 1fr);
+  grid-template-rows: repeat(var(--rows, 4), 1fr);
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.card {
+  perspective: 1000px;
+  cursor: pointer;
+  min-height: 0;
+  min-width: 0;
+  container-type: size;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card.matched {
+  pointer-events: none;
+}
+
+.card.matched .card-inner {
+  animation: matchAndFade 1s ease forwards;
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.card-back {
+  background: linear-gradient(135deg, var(--card-back-1), var(--card-back-2));
+  font-size: 25cqmin;
+  color: white;
+  font-weight: 700;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 2px dashed rgba(255,255,255,0.4);
+  border-radius: 10px;
+}
+
+.card-front {
+  background: white;
+  transform: rotateY(180deg);
+  font-size: 50cqmin;
+}
+
+.card.matched .card-front {
+  background: linear-gradient(135deg, #B4F8C8, #4ECDC4);
+}
+
+@keyframes matchAndFade {
+  0%   { transform: rotateY(180deg) scale(1);    opacity: 1; }
+  25%  { transform: rotateY(180deg) scale(1.12); opacity: 1; }
+  50%  { transform: rotateY(180deg) scale(1);    opacity: 1; }
+  100% { transform: rotateY(180deg) scale(0.6);  opacity: 0; }
+}
+
+.status {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: white;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.status.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.status.success { color: var(--accent-dark); }
+.status.fail { color: var(--primary-dark); }
+
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-shrink: 0;
+}
+
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 49, 66, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal.show { opacity: 1; pointer-events: auto; }
+
+.modal-content {
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+}
+
+.modal.show .modal-content { transform: scale(1); }
+
+.modal h2 {
+  font-size: 26px;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+
+.modal p { margin-bottom: 20px; opacity: 0.7; }
+
+.option-group { margin-bottom: 18px; text-align: left; }
+
+.option-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.option-buttons { display: flex; gap: 8px; }
+
+.option-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.option-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.winner-emoji {
+  font-size: 72px;
+  margin-bottom: 12px;
+  animation: bounce 0.8s ease infinite alternate;
+}
+
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 99;
+  animation: fall 3s linear forwards;
+}
+
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+@media (min-width: 768px) {
+  .logo { font-size: 32px; }
+  .timer { font-size: 22px; }
+  .player-score { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">เกม<span>จับคู่</span></div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="timer">⏱ <span id="timer">00:00</span></div>
+    </div>
+  </header>
+
+  <div class="players" id="players"></div>
+
+  <div class="board" id="board"></div>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ ตั้งค่า</button>
+    <button class="btn btn-primary" onclick="newGame()">🔄 เกมใหม่</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <h2>ตั้งค่าเกม</h2>
+    <p>เลือกความยากและจำนวนผู้เล่น</p>
+
+    <div class="option-group">
+      <span class="option-label">ผู้เล่น</span>
+      <div class="option-buttons" id="playerOptions">
+        <button class="option-btn" data-value="1">คนเดียว</button>
+        <button class="option-btn selected" data-value="2">สองคน</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">ความยาก</span>
+      <div class="option-buttons" id="difficultyOptions">
+        <button class="option-btn selected" data-value="easy">ง่าย</button>
+        <button class="option-btn" data-value="medium">กลาง</button>
+        <button class="option-btn" data-value="hard">ยาก</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">เวลาต่อรอบ (โหมด 2 คน)</span>
+      <div class="option-buttons" id="timeOptions">
+        <button class="option-btn" data-value="0">ไม่จำกัด</button>
+        <button class="option-btn" data-value="15">15s</button>
+        <button class="option-btn selected" data-value="30">30s</button>
+        <button class="option-btn" data-value="45">45s</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="applySettings()" style="margin-top: 12px;">เริ่มเกม</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content">
+    <div class="winner-emoji" id="winnerEmoji">🎉</div>
+    <h2 id="winnerTitle">ชนะแล้ว!</h2>
+    <p id="winnerSubtitle">เก่งมากเลย</p>
+    <button class="btn btn-primary" onclick="closeWinner(); newGame();">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script>
+// ของแต่ละการ์ด — เปลี่ยนเป็น emoji อะไรก็ได้ หรือเปลี่ยนเป็น <img> ทีหลังก็ได้
+const EMOJI_POOL = ['🐶','🐱','🐰','🐼','🦊','🐻','🦁','🐯','🐸','🐵','🐨','🐮','🐷','🦄','🐙','🦋','🐳','🦉','🐢','🐝'];
+
+// ชื่อภาษาอังกฤษของสัตว์แต่ละตัว — สำหรับเสียงพูด (ลูกได้เรียนคำศัพท์ไปด้วย)
+const EMOJI_NAMES = {
+  '🐶': 'Dog',     '🐱': 'Cat',     '🐰': 'Rabbit',  '🐼': 'Panda',
+  '🦊': 'Fox',     '🐻': 'Bear',    '🦁': 'Lion',    '🐯': 'Tiger',
+  '🐸': 'Frog',    '🐵': 'Monkey',  '🐨': 'Koala',   '🐮': 'Cow',
+  '🐷': 'Pig',     '🦄': 'Unicorn', '🐙': 'Octopus', '🦋': 'Butterfly',
+  '🐳': 'Whale',   '🦉': 'Owl',     '🐢': 'Turtle',  '🐝': 'Bee',
+};
+
+const PLAYER_AVATARS = ['🦁', '🐯'];
+const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
+
+const DIFFICULTY = {
+  easy:   { pairs: 6  },  // 12 ใบ
+  medium: { pairs: 8  },  // 16 ใบ
+  hard:   { pairs: 10 },  // 20 ใบ
+};
+
+// เลือก cols × rows ตาม orientation ของ iPad — ให้การ์ดเต็มพื้นที่พอดี ไม่ overflow บัง UI
+function pickGrid(pairs) {
+  const total = pairs * 2;
+  const landscape = window.innerWidth > window.innerHeight;
+  const layouts = {
+    12: landscape ? [4, 3] : [3, 4],
+    16: [4, 4],  // สี่เหลี่ยมจัตุรัส ใช้ได้ทั้ง 2 orientation
+    20: landscape ? [5, 4] : [4, 5],
+  };
+  return layouts[total] || [4, Math.ceil(total / 4)];
+}
+
+let state = {
+  cards: [], flipped: [], matched: 0,
+  scores: [0, 0], currentPlayer: 0,
+  numPlayers: 2, difficulty: 'easy',
+  locked: false, startTime: null, timerId: null,
+  // เวลาต่อรอบ (วินาที): 0 = ไม่จำกัด
+  turnTimeLimit: 30, turnTimeLeft: 0, turnTimerId: null,
+};
+
+// ─── เสียง: สังเคราะห์ด้วย Web Audio API ไม่ต้องโหลดไฟล์เสียง ───
+const audio = {
+  ctx: null,
+  enabled: true,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  beep(freq, duration, type = 'sine', volume = 0.15, startAt = 0) {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime + startAt;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration);
+  },
+  flip() {
+    this.beep(600, 0.08, 'triangle', 0.1);
+  },
+  match() {
+    // ทำนองขึ้น 3 โน้ต: C5 → E5 → G5 (do-mi-sol)
+    this.beep(523, 0.12, 'sine', 0.18, 0);
+    this.beep(659, 0.12, 'sine', 0.18, 0.10);
+    this.beep(784, 0.25, 'sine', 0.18, 0.20);
+  },
+  noMatch() {
+    // ทำนองลงเบาๆ ไม่ดุดัน
+    this.beep(330, 0.15, 'sine', 0.12, 0);
+    this.beep(247, 0.20, 'sine', 0.12, 0.12);
+  },
+  win() {
+    // อาร์เปจจิโอ C major
+    [523, 659, 784, 1047, 1319].forEach((f, i) => {
+      this.beep(f, 0.25, 'triangle', 0.2, i * 0.12);
+    });
+  },
+  speak(text) {
+    // ใช้ Web Speech API ของเบราว์เซอร์ — iOS Safari มีติดมาเลย ไม่ต้องโหลดอะไร
+    if (!this.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel(); // ยกเลิกเสียงเก่าถ้ามี กันซ้อน
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.85;   // ช้านิดให้ลูกฟังทัน
+    u.pitch = 1.15;  // เสียงสูงนิดให้ดูเป็นมิตร
+    u.volume = 1;
+    speechSynthesis.speak(u);
+  }
+};
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (audio.enabled) {
+    audio.init();
+  } else if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+  }
+}
+
+// iOS ต้องการให้ AudioContext เริ่มจาก user gesture — init ตอนแตะครั้งแรก
+document.addEventListener('pointerdown', () => audio.init(), { once: true });
+
+function newGame() {
+  const { pairs } = DIFFICULTY[state.difficulty];
+  const chosen = [...EMOJI_POOL].sort(() => Math.random() - 0.5).slice(0, pairs);
+  state.cards = [...chosen, ...chosen]
+    .map((emoji, i) => ({ emoji, id: i }))
+    .sort(() => Math.random() - 0.5);
+  state.flipped = [];
+  state.matched = 0;
+  state.scores = [0, 0];
+  state.currentPlayer = 0;
+  state.locked = false;
+  state.startTime = Date.now();
+
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(updateTimer, 1000);
+  updateTimer();
+
+  renderPlayers();
+  renderBoard();
+  startTurn();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('players');
+  el.innerHTML = '';
+  for (let i = 0; i < state.numPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = `player p${i+1} ${state.currentPlayer === i ? 'active' : ''}`;
+    const showTime = state.numPlayers === 2 && state.turnTimeLimit > 0 && state.currentPlayer === i;
+    div.innerHTML = `
+      <div class="player-avatar">${PLAYER_AVATARS[i]}</div>
+      <div class="player-info">
+        <div class="player-name">${PLAYER_NAMES[i]}</div>
+        <div class="player-score">${state.scores[i]} คู่</div>
+      </div>
+      ${showTime ? `<div class="player-time" id="turnTime">${state.turnTimeLeft}s</div>` : ''}
+    `;
+    el.appendChild(div);
+  }
+}
+
+// ─── ตัวจับเวลาต่อรอบ (เฉพาะโหมด 2 ผู้เล่นที่เปิดเวลา) ───
+function startTurn() {
+  pauseTurn();
+  if (state.numPlayers !== 2 || state.turnTimeLimit === 0) return;
+  state.turnTimeLeft = state.turnTimeLimit;
+  renderPlayers();
+  state.turnTimerId = setInterval(() => {
+    state.turnTimeLeft--;
+    const t = document.getElementById('turnTime');
+    if (t) {
+      t.textContent = state.turnTimeLeft + 's';
+      t.classList.toggle('low', state.turnTimeLeft <= 5);
+    }
+    if (state.turnTimeLeft <= 5 && state.turnTimeLeft > 0) audio.beep(880, 0.06, 'triangle', 0.08);
+    if (state.turnTimeLeft <= 0) timeOut();
+  }, 1000);
+}
+
+function pauseTurn() {
+  if (state.turnTimerId) {
+    clearInterval(state.turnTimerId);
+    state.turnTimerId = null;
+  }
+}
+
+function timeOut() {
+  pauseTurn();
+  audio.noMatch();
+  showStatus('หมดเวลา! เปลี่ยนผู้เล่น', 'fail');
+  // คว่ำการ์ดที่เปิดค้างอยู่กลับ
+  state.flipped.forEach(({ el }) => el.classList.remove('flipped'));
+  state.flipped = [];
+  state.locked = false;
+  state.currentPlayer = 1 - state.currentPlayer;
+  renderPlayers();
+  startTurn();
+}
+
+function applyGrid() {
+  if (state.cards.length === 0) return;
+  const [cols, rows] = pickGrid(state.cards.length / 2);
+  const board = document.getElementById('board');
+  board.style.setProperty('--cols', cols);
+  board.style.setProperty('--rows', rows);
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.className = 'board';
+  board.innerHTML = '';
+  applyGrid();
+  state.cards.forEach((card, idx) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.dataset.idx = idx;
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back">${idx + 1}</div>
+        <div class="card-face card-front">${card.emoji}</div>
+      </div>
+    `;
+    el.addEventListener('click', () => flipCard(idx, el));
+    board.appendChild(el);
+  });
+}
+
+// ปรับ grid ใหม่เมื่อ iPad หมุน หรือเปลี่ยน window size
+window.addEventListener('resize', applyGrid);
+window.addEventListener('orientationchange', applyGrid);
+
+function flipCard(idx, el) {
+  if (state.locked) return;
+  if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
+  if (state.flipped.length >= 2) return;
+
+  el.classList.add('flipped');
+  audio.flip();
+  // พูดชื่อสัตว์ภาษาอังกฤษหลังเสียง click เล็กน้อย เพื่อไม่ให้ซ้อนกัน
+  const name = EMOJI_NAMES[state.cards[idx].emoji];
+  if (name) setTimeout(() => audio.speak(name), 120);
+  state.flipped.push({ idx, el });
+
+  if (state.flipped.length === 2) {
+    state.locked = true;
+    pauseTurn();
+    const [a, b] = state.flipped;
+    if (state.cards[a.idx].emoji === state.cards[b.idx].emoji) {
+      setTimeout(() => {
+        a.el.classList.add('matched');
+        b.el.classList.add('matched');
+        audio.match();
+        state.scores[state.currentPlayer]++;
+        state.matched++;
+        state.flipped = [];
+        state.locked = false;
+        renderPlayers();
+        showStatus('ตรงกัน! 🎉', 'success');
+        if (state.matched === state.cards.length / 2) {
+          setTimeout(showWinner, 800);
+        } else {
+          startTurn();  // จับคู่ถูก = เล่นต่อ → รีเซ็ตเวลารอบเดิม
+        }
+      }, 500);
+    } else {
+      showStatus('ลองใหม่นะ', 'fail');
+      setTimeout(() => {
+        audio.noMatch();
+        a.el.classList.remove('flipped');
+        b.el.classList.remove('flipped');
+        state.flipped = [];
+        state.locked = false;
+        if (state.numPlayers === 2) {
+          state.currentPlayer = 1 - state.currentPlayer;
+          renderPlayers();
+        }
+        startTurn();  // เริ่มจับเวลารอบใหม่ของผู้เล่นถัดไป (หรือคนเดิมถ้าโหมดเดี่ยว)
+      }, 1200);
+    }
+  }
+}
+
+function showStatus(text, kind) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = `status show ${kind}`;
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(() => el.classList.remove('show'), 900);
+}
+
+function updateTimer() {
+  if (!state.startTime) return;
+  const sec = Math.floor((Date.now() - state.startTime) / 1000);
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  document.getElementById('timer').textContent = `${m}:${s}`;
+}
+
+function showWinner() {
+  if (state.timerId) clearInterval(state.timerId);
+  pauseTurn();
+  audio.win();
+
+  const modal = document.getElementById('winnerModal');
+  const emoji = document.getElementById('winnerEmoji');
+  const title = document.getElementById('winnerTitle');
+  const subtitle = document.getElementById('winnerSubtitle');
+
+  if (state.numPlayers === 1) {
+    emoji.textContent = '🏆';
+    title.textContent = 'เก่งมาก!';
+    const sec = Math.floor((Date.now() - state.startTime) / 1000);
+    subtitle.textContent = `ใช้เวลา ${Math.floor(sec/60)} นาที ${sec%60} วินาที`;
+  } else {
+    const [s1, s2] = state.scores;
+    if (s1 > s2) {
+      emoji.textContent = PLAYER_AVATARS[0];
+      title.textContent = `${PLAYER_NAMES[0]} ชนะ!`;
+      subtitle.textContent = `${s1} คู่ vs ${s2} คู่`;
+    } else if (s2 > s1) {
+      emoji.textContent = PLAYER_AVATARS[1];
+      title.textContent = `${PLAYER_NAMES[1]} ชนะ!`;
+      subtitle.textContent = `${s2} คู่ vs ${s1} คู่`;
+    } else {
+      emoji.textContent = '🤝';
+      title.textContent = 'เสมอกัน!';
+      subtitle.textContent = `${s1} คู่ เท่ากัน`;
+    }
+  }
+
+  modal.classList.add('show');
+  launchConfetti();
+}
+
+function closeWinner() {
+  document.getElementById('winnerModal').classList.remove('show');
+}
+
+function launchConfetti() {
+  const colors = ['#FF7E5F', '#4ECDC4', '#FF6B9D', '#6BCBFF', '#FFD93D'];
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function applySettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  newGame();
+}
+
+document.querySelectorAll('.option-buttons').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group.id === 'playerOptions') {
+      state.numPlayers = parseInt(btn.dataset.value);
+    } else if (group.id === 'difficultyOptions') {
+      state.difficulty = btn.dataset.value;
+    } else if (group.id === 'timeOptions') {
+      state.turnTimeLimit = parseInt(btn.dataset.value);
+    }
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>
