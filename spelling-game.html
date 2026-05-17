@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เกมสะกดชื่อสัตว์">
+<title>เกมสะกดชื่อสัตว์ของหนู</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg-1: #FFF5E6;
+  --bg-2: #FFE8D6;
+  --primary: #FF7E5F;
+  --primary-dark: #E85D3C;
+  --accent: #4ECDC4;
+  --accent-dark: #3BA39C;
+  --player1: #FF6B9D;
+  --player2: #6BCBFF;
+  --text: #2D3142;
+  --shadow: 0 8px 24px rgba(45, 49, 66, 0.12);
+  --shadow-lg: 0 16px 40px rgba(45, 49, 66, 0.18);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 126, 95, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(78, 205, 196, 0.10) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.progress {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted { opacity: 0.5; }
+
+.players { display: flex; gap: 12px; margin-bottom: 14px; flex-shrink: 0; }
+
+.player {
+  flex: 1;
+  background: white;
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s;
+  border: 3px solid transparent;
+}
+.player.active { transform: translateY(-4px); border-color: currentColor; box-shadow: var(--shadow-lg); }
+.player.p1 { color: var(--player1); }
+.player.p2 { color: var(--player2); }
+
+.player-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.player-info { flex: 1; min-width: 0; }
+.player-name { font-size: 14px; font-weight: 500; color: var(--text); opacity: 0.7; }
+.player-score { font-size: 22px; font-weight: 700; color: currentColor; line-height: 1.1; }
+
+/* ─── พื้นที่เล่นหลัก ─── */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.animal {
+  font-size: min(34vw, 30vh, 220px);
+  line-height: 1;
+  filter: drop-shadow(0 10px 18px rgba(45,49,66,0.18));
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.slots {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.slot {
+  min-width: 56px;
+  height: 64px;
+  padding: 0 6px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  border: 3px dashed #e6d9c9;
+}
+.slot.filled { border-style: solid; border-color: var(--accent); color: var(--accent-dark); }
+.slot.blank-target { border-color: var(--primary); }
+.slot.correct { background: linear-gradient(135deg, #B4F8C8, #4ECDC4); color: white; border-color: transparent; }
+.slot.wrong { background: #FFDDD6; color: var(--primary-dark); border-color: var(--primary-dark); border-style: solid; }
+
+.tiles {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 760px;
+}
+
+.tile {
+  min-width: 64px;
+  height: 64px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: none;
+  background: white;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.2s;
+}
+.tile:active { transform: scale(0.92); }
+.tile.word { font-size: 26px; padding: 0 22px; min-width: 130px; }
+.tile.used { opacity: 0.25; pointer-events: none; }
+.tile.shake { animation: shake 0.4s; }
+.tile.good { background: linear-gradient(135deg, #B4F8C8, #4ECDC4); color: white; }
+.tile.bad { background: #FFDDD6; color: var(--primary-dark); }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-7px); }
+  40%,80% { transform: translateX(7px); }
+}
+
+.status {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: white;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+  white-space: nowrap;
+}
+.status.show { opacity: 1; transform: translate(-50%, 0); }
+.status.success { color: var(--accent-dark); }
+.status.fail { color: var(--primary-dark); }
+
+.controls { display: flex; gap: 12px; margin-top: 14px; flex-shrink: 0; }
+
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 49, 66, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal.show { opacity: 1; pointer-events: auto; }
+
+.modal-content {
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal.show .modal-content { transform: scale(1); }
+.modal h2 { font-size: 26px; margin-bottom: 8px; color: var(--primary); }
+.modal p { margin-bottom: 20px; opacity: 0.7; }
+
+.option-group { margin-bottom: 18px; text-align: left; }
+.option-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.option-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.option-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px;
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.option-btn.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+.winner-emoji { font-size: 72px; margin-bottom: 12px; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 99;
+  animation: fall 3s linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+@media (min-width: 768px) {
+  .logo { font-size: 30px; }
+  .progress { font-size: 20px; }
+  .player-score { font-size: 30px; }
+  .slot { font-size: 38px; height: 72px; min-width: 64px; }
+  .tile { font-size: 34px; height: 72px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">เกม<span>สะกดคำ</span></div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="progress">📝 <span id="progress">1/10</span></div>
+    </div>
+  </header>
+
+  <div class="players" id="players"></div>
+
+  <div class="stage">
+    <div class="animal" id="animal">🐶</div>
+    <div class="slots" id="slots"></div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ ตั้งค่า</button>
+    <button class="btn btn-primary" onclick="newGame()">🔄 เกมใหม่</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <h2>ตั้งค่าเกม</h2>
+    <p>เลือกภาษา โหมด และจำนวนผู้เล่น</p>
+
+    <div class="option-group">
+      <span class="option-label">ภาษา</span>
+      <div class="option-buttons" id="langOptions">
+        <button class="option-btn selected" data-value="th">ไทย</button>
+        <button class="option-btn" data-value="en">อังกฤษ</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">โหมดเล่น</span>
+      <div class="option-buttons" id="modeOptions">
+        <button class="option-btn selected" data-value="order">เรียงทีละตัว</button>
+        <button class="option-btn" data-value="fill">เติมตัวที่หาย</button>
+        <button class="option-btn" data-value="word">เลือกคำที่ถูก</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">ผู้เล่น</span>
+      <div class="option-buttons" id="playerOptions">
+        <button class="option-btn selected" data-value="1">คนเดียว</button>
+        <button class="option-btn" data-value="2">สองคน</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">จำนวนข้อ</span>
+      <div class="option-buttons" id="roundOptions">
+        <button class="option-btn" data-value="5">5 ข้อ</button>
+        <button class="option-btn selected" data-value="10">10 ข้อ</button>
+        <button class="option-btn" data-value="15">15 ข้อ</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="applySettings()" style="margin-top: 12px;">เริ่มเกม</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content">
+    <div class="winner-emoji" id="winnerEmoji">🎉</div>
+    <h2 id="winnerTitle">เก่งมาก!</h2>
+    <p id="winnerSubtitle">เล่นได้ดีมากเลย</p>
+    <button class="btn btn-primary" onclick="closeWinner(); newGame();">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script>
+// ─── คลังสัตว์: emoji + ชื่อไทย + ชื่ออังกฤษ ───
+// อยากเพิ่ม/แก้สัตว์ แก้ที่ ANIMALS นี้ได้เลย
+const ANIMALS = [
+  { emoji: '🐶', th: 'หมา',     en: 'Dog' },
+  { emoji: '🐱', th: 'แมว',     en: 'Cat' },
+  { emoji: '🐰', th: 'กระต่าย', en: 'Rabbit' },
+  { emoji: '🐼', th: 'แพนด้า',  en: 'Panda' },
+  { emoji: '🦊', th: 'จิ้งจอก', en: 'Fox' },
+  { emoji: '🐻', th: 'หมี',     en: 'Bear' },
+  { emoji: '🦁', th: 'สิงโต',   en: 'Lion' },
+  { emoji: '🐯', th: 'เสือ',    en: 'Tiger' },
+  { emoji: '🐸', th: 'กบ',      en: 'Frog' },
+  { emoji: '🐵', th: 'ลิง',     en: 'Monkey' },
+  { emoji: '🐮', th: 'วัว',     en: 'Cow' },
+  { emoji: '🐷', th: 'หมู',     en: 'Pig' },
+  { emoji: '🐘', th: 'ช้าง',    en: 'Elephant' },
+  { emoji: '🐠', th: 'ปลา',     en: 'Fish' },
+  { emoji: '🐔', th: 'ไก่',     en: 'Chicken' },
+  { emoji: '🐦', th: 'นก',      en: 'Bird' },
+  { emoji: '🐝', th: 'ผึ้ง',    en: 'Bee' },
+  { emoji: '🐢', th: 'เต่า',    en: 'Turtle' },
+  { emoji: '🦆', th: 'เป็ด',    en: 'Duck' },
+  { emoji: '🐍', th: 'งู',      en: 'Snake' },
+  { emoji: '🐴', th: 'ม้า',     en: 'Horse' },
+  { emoji: '🐑', th: 'แกะ',     en: 'Sheep' },
+];
+
+const PLAYER_AVATARS = ['🦁', '🐯'];
+const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
+
+// ตัวอักษรไทยสำหรับสุ่มเป็นตัวลวง (ตัวเลือกผิด)
+const THAI_DISTRACTORS = 'กขคงจฉชซญดตถทธนบปผพฟภมยรลวสหอฮ'.split('');
+const EN_DISTRACTORS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+// เครื่องหมาย/สระที่ลอยบน-ล่าง (combining) ของไทย — ใช้รวมกับพยัญชนะตัวหน้าให้อ่านง่าย
+const THAI_COMBINING = /[ัิ-ฺ็-๎]/;
+
+// ตัดคำเป็น "หน่วย" สำหรับวางในช่อง
+//  - อังกฤษ: ทีละตัวอักษร (ตัวพิมพ์ใหญ่)
+//  - ไทย: พยัญชนะ + เครื่องหมายที่เกาะอยู่ = 1 หน่วย (เช่น "ช้าง" → ช้ า ง)
+function segment(word, lang) {
+  if (lang === 'en') return word.toUpperCase().split('');
+  const units = [];
+  for (const ch of word) {
+    if (units.length && THAI_COMBINING.test(ch)) units[units.length - 1] += ch;
+    else units.push(ch);
+  }
+  return units;
+}
+
+let state = {
+  lang: 'th', mode: 'order', numPlayers: 1,
+  totalRounds: 10, round: 1,
+  scores: [0, 0], currentPlayer: 0,
+  animal: null, units: [],
+  expectIdx: 0,        // โหมด order: รอหน่วยลำดับที่เท่าไหร่
+  blankIdx: -1,        // โหมด fill: ช่องที่เว้นว่าง
+  locked: false,
+  recent: [],          // กันสุ่มสัตว์ซ้ำติดกัน
+};
+
+// ─── เสียง: สังเคราะห์ด้วย Web Audio API ไม่ต้องโหลดไฟล์เสียง ───
+const audio = {
+  ctx: null,
+  enabled: true,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  beep(freq, duration, type = 'sine', volume = 0.15, startAt = 0) {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime + startAt;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration);
+  },
+  tap()  { this.beep(620, 0.07, 'triangle', 0.10); },
+  good() {
+    // do-mi-sol ขึ้น
+    this.beep(523, 0.12, 'sine', 0.18, 0);
+    this.beep(659, 0.12, 'sine', 0.18, 0.10);
+    this.beep(784, 0.25, 'sine', 0.18, 0.20);
+  },
+  bad() {
+    this.beep(330, 0.15, 'sine', 0.12, 0);
+    this.beep(247, 0.20, 'sine', 0.12, 0.12);
+  },
+  win() {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => {
+      this.beep(f, 0.25, 'triangle', 0.2, i * 0.12);
+    });
+  },
+  _lastSpeak: 0,
+  speak(text, lang) {
+    // Web Speech API ของเบราว์เซอร์ — iOS Safari มีติดมา รองรับทั้ง th-TH และ en-US
+    if (!this.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    // iOS Safari ค้างทั้งหน้าถ้าสั่ง cancel()+speak() รัวๆ → throttle 250ms
+    const now = Date.now();
+    if (now - this._lastSpeak < 250) return;
+    this._lastSpeak = now;
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'en' ? 'en-US' : 'th-TH';
+      const v = (speechSynthesis.getVoices() || []).find(v => v.lang && v.lang.toLowerCase().startsWith(u.lang.toLowerCase().slice(0,2)));
+      if (v) u.voice = v;
+      u.rate = 0.8;    // ช้านิดให้ลูกฟังทัน
+      u.pitch = 1.12;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) { /* ปล่อยผ่าน อย่าให้เกมค้าง */ }
+  }
+};
+// บางเบราว์เซอร์โหลดรายชื่อเสียงแบบ async — เรียกไว้ให้พร้อม
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (audio.enabled) audio.init();
+  else if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// iOS ต้องการให้ AudioContext เริ่มจาก user gesture
+document.addEventListener('pointerdown', () => audio.init(), { once: true });
+
+// ─── กันจอซูมบน iPad เวลาเด็กกดเร็วๆ ───
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false })
+);
+let lastTap = { t: 0, x: 0, y: 0 };
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  const touch = e.changedTouches[0];
+  if (now - lastTap.t < 350 &&
+      Math.abs(touch.clientX - lastTap.x) < 30 &&
+      Math.abs(touch.clientY - lastTap.y) < 30) {
+    e.preventDefault();
+  }
+  lastTap = { t: now, x: touch.clientX, y: touch.clientY };
+}, { passive: false });
+
+function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
+
+function newGame() {
+  state.round = 1;
+  state.scores = [0, 0];
+  state.currentPlayer = 0;
+  state.recent = [];
+  renderPlayers();
+  nextRound();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('players');
+  el.innerHTML = '';
+  for (let i = 0; i < state.numPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = `player p${i+1} ${state.currentPlayer === i ? 'active' : ''}`;
+    div.innerHTML = `
+      <div class="player-avatar">${PLAYER_AVATARS[i]}</div>
+      <div class="player-info">
+        <div class="player-name">${PLAYER_NAMES[i]}</div>
+        <div class="player-score">${state.scores[i]} คะแนน</div>
+      </div>`;
+    el.appendChild(div);
+  }
+}
+
+function pickAnimal() {
+  let a;
+  do { a = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]; }
+  while (state.recent.includes(a.emoji) && ANIMALS.length > state.recent.length);
+  state.recent.push(a.emoji);
+  if (state.recent.length > 6) state.recent.shift();
+  return a;
+}
+
+function nextRound() {
+  if (state.round > state.totalRounds) return showWinner();
+  state.locked = false;
+  state.animal = pickAnimal();
+  const word = state.animal[state.lang];
+  state.units = segment(word, state.lang);
+
+  // ผู้เล่นของข้อนี้ (โหมด 2 คน = สลับทุกข้อ)
+  state.currentPlayer = state.numPlayers === 2 ? (state.round - 1) % 2 : 0;
+  renderPlayers();
+
+  document.getElementById('progress').textContent = `${state.round}/${state.totalRounds}`;
+  document.getElementById('animal').textContent = state.animal.emoji;
+  // กระตุก animation pop ใหม่ทุกข้อ
+  const ae = document.getElementById('animal');
+  ae.style.animation = 'none'; void ae.offsetWidth; ae.style.animation = '';
+
+  if (state.mode === 'order') setupOrder();
+  else if (state.mode === 'fill') setupFill();
+  else setupWord();
+}
+
+// ─── โหมด 1: เรียงทีละตัวจนครบคำ ───
+function setupOrder() {
+  state.expectIdx = 0;
+  const slots = document.getElementById('slots');
+  slots.innerHTML = '';
+  state.units.forEach(() => {
+    const s = document.createElement('div');
+    s.className = 'slot';
+    slots.appendChild(s);
+  });
+
+  // ตัวลวง 2-3 ตัว ปนกับตัวจริง แล้วสับ
+  const pool = state.lang === 'en' ? EN_DISTRACTORS : THAI_DISTRACTORS;
+  const decoys = [];
+  const nDecoy = Math.min(3, Math.max(2, Math.floor(state.units.length / 2)));
+  while (decoys.length < nDecoy) {
+    const d = pool[Math.floor(Math.random() * pool.length)];
+    if (!state.units.includes(d) && !decoys.includes(d)) decoys.push(d);
+  }
+  const tilesData = shuffle([...state.units, ...decoys]);
+
+  const tiles = document.getElementById('tiles');
+  tiles.innerHTML = '';
+  tilesData.forEach(val => {
+    const b = document.createElement('button');
+    b.className = 'tile';
+    b.textContent = val;
+    b.onclick = () => pickOrderTile(val, b);
+    tiles.appendChild(b);
+  });
+}
+
+function pickOrderTile(val, btn) {
+  if (state.locked) return;
+  const want = state.units[state.expectIdx];
+  if (val === want) {
+    audio.tap();
+    btn.classList.add('used');
+    const slot = document.getElementById('slots').children[state.expectIdx];
+    slot.textContent = val;
+    slot.classList.add('filled');
+    state.expectIdx++;
+    if (state.expectIdx === state.units.length) finishCorrect();
+  } else {
+    audio.bad();
+    btn.classList.add('shake');
+    setTimeout(() => btn.classList.remove('shake'), 400);
+  }
+}
+
+// ─── โหมด 2: เติมตัวที่หายไป (ปรนัย) ───
+function setupFill() {
+  // เลือกช่องเว้น — เลี่ยงหน่วยที่เป็นเครื่องหมายล้วน ให้เด็กเดาง่ายขึ้น
+  let candidates = state.units.map((_, i) => i);
+  if (state.units.length > 1) {
+    state.blankIdx = candidates[Math.floor(Math.random() * candidates.length)];
+  } else {
+    state.blankIdx = 0;
+  }
+  const answer = state.units[state.blankIdx];
+
+  const slots = document.getElementById('slots');
+  slots.innerHTML = '';
+  state.units.forEach((u, i) => {
+    const s = document.createElement('div');
+    if (i === state.blankIdx) {
+      s.className = 'slot blank-target';
+      s.textContent = '?';
+    } else {
+      s.className = 'slot filled';
+      s.textContent = u;
+    }
+    slots.appendChild(s);
+  });
+
+  // ตัวเลือก: คำตอบจริง + ตัวลวง 2 ตัว
+  const pool = state.lang === 'en' ? EN_DISTRACTORS : THAI_DISTRACTORS;
+  const opts = [answer];
+  while (opts.length < 3) {
+    const d = pool[Math.floor(Math.random() * pool.length)];
+    if (!opts.includes(d)) opts.push(d);
+  }
+  shuffle(opts);
+
+  const tiles = document.getElementById('tiles');
+  tiles.innerHTML = '';
+  opts.forEach(val => {
+    const b = document.createElement('button');
+    b.className = 'tile';
+    b.textContent = val;
+    b.onclick = () => pickChoice(val === answer, b, () => {
+      const slot = document.getElementById('slots').children[state.blankIdx];
+      slot.textContent = answer;
+      slot.classList.remove('blank-target');
+      slot.classList.add('correct');
+    });
+    tiles.appendChild(b);
+  });
+}
+
+// ─── โหมด 3: เลือกคำที่ถูกจากตัวเลือก ───
+function setupWord() {
+  const correct = state.animal[state.lang];
+  const slots = document.getElementById('slots');
+  slots.innerHTML = '<div class="slot blank-target" style="min-width:90px">?</div>';
+
+  const others = shuffle(ANIMALS.filter(a => a.emoji !== state.animal.emoji))
+    .slice(0, 2).map(a => a[state.lang]);
+  const opts = shuffle([correct, ...others]);
+
+  const tiles = document.getElementById('tiles');
+  tiles.innerHTML = '';
+  opts.forEach(val => {
+    const b = document.createElement('button');
+    b.className = 'tile word';
+    b.textContent = val;
+    b.onclick = () => pickChoice(val === correct, b, () => {
+      const slot = slots.children[0];
+      slot.textContent = correct;
+      slot.classList.remove('blank-target');
+      slot.classList.add('correct');
+    });
+    tiles.appendChild(b);
+  });
+}
+
+// ใช้ร่วมกันโหมด fill/word: เลือกครั้งเดียวจบ
+function pickChoice(isCorrect, btn, onReveal) {
+  if (state.locked) return;
+  state.locked = true;
+  if (isCorrect) {
+    btn.classList.add('good');
+    onReveal();
+    finishCorrect();
+  } else {
+    btn.classList.add('bad');
+    audio.bad();
+    showStatus('ยังไม่ใช่ ลองดูเฉลยนะ', 'fail');
+    // เผยคำตอบที่ถูกให้เห็น แล้วไปข้อต่อไป
+    setTimeout(() => { onReveal(); }, 300);
+    setTimeout(() => {
+      audio.speak(state.animal[state.lang], state.lang);
+    }, 500);
+    setTimeout(() => { advance(); }, 2200);
+  }
+}
+
+function finishCorrect() {
+  state.locked = true;
+  audio.good();
+  state.scores[state.currentPlayer]++;
+  renderPlayers();
+  // เน้นช่องทั้งหมดเป็นสีเขียว
+  [...document.getElementById('slots').children].forEach(s => s.classList.add('correct'));
+  const name = state.animal[state.lang];
+  showStatus(`ถูกต้อง! ${name} 🎉`, 'success');
+  setTimeout(() => audio.speak(name, state.lang), 250);
+  miniConfetti();
+  setTimeout(() => { advance(); }, 2000);
+}
+
+function advance() {
+  state.round++;
+  nextRound();
+}
+
+function showStatus(text, kind) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = `status show ${kind}`;
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+function showWinner() {
+  audio.win();
+  const modal = document.getElementById('winnerModal');
+  const emoji = document.getElementById('winnerEmoji');
+  const title = document.getElementById('winnerTitle');
+  const sub = document.getElementById('winnerSubtitle');
+
+  if (state.numPlayers === 1) {
+    emoji.textContent = '🏆';
+    title.textContent = 'เก่งมาก!';
+    sub.textContent = `ได้ ${state.scores[0]} / ${state.totalRounds} คะแนน`;
+  } else {
+    const [s1, s2] = state.scores;
+    if (s1 > s2) {
+      emoji.textContent = PLAYER_AVATARS[0];
+      title.textContent = `${PLAYER_NAMES[0]} ชนะ!`;
+      sub.textContent = `${s1} คะแนน vs ${s2} คะแนน`;
+    } else if (s2 > s1) {
+      emoji.textContent = PLAYER_AVATARS[1];
+      title.textContent = `${PLAYER_NAMES[1]} ชนะ!`;
+      sub.textContent = `${s2} คะแนน vs ${s1} คะแนน`;
+    } else {
+      emoji.textContent = '🤝';
+      title.textContent = 'เสมอกัน!';
+      sub.textContent = `${s1} คะแนน เท่ากัน`;
+    }
+  }
+  modal.classList.add('show');
+  launchConfetti();
+}
+
+function closeWinner() {
+  document.getElementById('winnerModal').classList.remove('show');
+}
+
+function miniConfetti() {
+  const colors = ['#FF7E5F', '#4ECDC4', '#FF6B9D', '#6BCBFF', '#FFD93D'];
+  for (let i = 0; i < 18; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (40 + Math.random() * 20) + 'vw';
+    c.style.top = '30vh';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.6 + Math.random()) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2800);
+  }
+}
+
+function launchConfetti() {
+  const colors = ['#FF7E5F', '#4ECDC4', '#FF6B9D', '#6BCBFF', '#FFD93D'];
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+
+function applySettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  newGame();
+}
+
+document.querySelectorAll('.option-buttons').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group.id === 'langOptions') state.lang = btn.dataset.value;
+    else if (group.id === 'modeOptions') state.mode = btn.dataset.value;
+    else if (group.id === 'playerOptions') state.numPlayers = parseInt(btn.dataset.value);
+    else if (group.id === 'roundOptions') state.totalRounds = parseInt(btn.dataset.value);
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>
