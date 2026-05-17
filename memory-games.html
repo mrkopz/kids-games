@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
 
 :root {
   --bg-1: #FFF5E6;
@@ -583,17 +583,28 @@ const audio = {
       this.beep(f, 0.25, 'triangle', 0.2, i * 0.12);
     });
   },
+  _lastSpeak: 0,
   speak(text) {
     // ใช้ Web Speech API ของเบราว์เซอร์ — iOS Safari มีติดมาเลย ไม่ต้องโหลดอะไร
     if (!this.enabled) return;
     if (!('speechSynthesis' in window)) return;
-    speechSynthesis.cancel(); // ยกเลิกเสียงเก่าถ้ามี กันซ้อน
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    u.rate = 0.85;   // ช้านิดให้ลูกฟังทัน
-    u.pitch = 1.15;  // เสียงสูงนิดให้ดูเป็นมิตร
-    u.volume = 1;
-    speechSynthesis.speak(u);
+    // iOS Safari ค้างทั้งหน้าถ้าสั่ง cancel()+speak() รัวๆ (เด็กกดเร็วมาก)
+    // → throttle: ถ้าเพิ่งพูดไปไม่ถึง 250ms ข้ามไปเลย ไม่สั่งซ้ำ
+    const now = Date.now();
+    if (now - this._lastSpeak < 250) return;
+    this._lastSpeak = now;
+    try {
+      // cancel เฉพาะตอนที่กำลังพูด/มีคิวค้างจริงๆ เท่านั้น ลดโอกาส engine ค้าง
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = 0.85;   // ช้านิดให้ลูกฟังทัน
+      u.pitch = 1.15;  // เสียงสูงนิดให้ดูเป็นมิตร
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) {
+      // ถ้า speech engine มีปัญหา ปล่อยผ่าน อย่าให้เกมค้าง
+    }
   }
 };
 
@@ -611,6 +622,25 @@ function toggleSound() {
 
 // iOS ต้องการให้ AudioContext เริ่มจาก user gesture — init ตอนแตะครั้งแรก
 document.addEventListener('pointerdown', () => audio.init(), { once: true });
+
+// ─── กันจอซูมบน iPad เวลาเด็กกดเร็วๆ ───
+// iOS Safari จงใจไม่สน user-scalable=no ต้องดัก gesture (pinch zoom) เอง
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false })
+);
+// กัน double-tap zoom ที่จุดเดิมซ้ำเร็วๆ — เช็คว่าเป็น "การ์ดใบเดิม" เท่านั้น
+// (ถ้าแตะคนละใบเร็วๆ ปล่อยผ่านปกติ เพราะเป็นการเล่นจริง)
+let lastTap = { t: 0, x: 0, y: 0 };
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  const touch = e.changedTouches[0];
+  if (now - lastTap.t < 350 &&
+      Math.abs(touch.clientX - lastTap.x) < 30 &&
+      Math.abs(touch.clientY - lastTap.y) < 30) {
+    e.preventDefault();  // แตะจุดเดิมรัวๆ = กันซูม
+  }
+  lastTap = { t: now, x: touch.clientX, y: touch.clientY };
+}, { passive: false });
 
 function newGame() {
   const { pairs } = DIFFICULTY[state.difficulty];
