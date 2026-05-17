@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เกมของหนู">
+<title>เกมของหนู 🎮</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg-1: #FFF5E6;
+  --bg-2: #FFE8D6;
+  --primary: #FF7E5F;
+  --primary-dark: #E85D3C;
+  --accent: #4ECDC4;
+  --accent-dark: #3BA39C;
+  --text: #2D3142;
+  --shadow: 0 8px 24px rgba(45, 49, 66, 0.12);
+  --shadow-lg: 0 16px 40px rgba(45, 49, 66, 0.18);
+}
+
+html, body {
+  min-height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 126, 95, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(78, 205, 196, 0.10) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 32px;
+  padding-top: max(32px, env(safe-area-inset-top));
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(2rem, 7vw, 3.4rem);
+  font-weight: 700;
+  color: var(--primary-dark);
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: clamp(1rem, 3.2vw, 1.3rem);
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  width: 100%;
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  border: 3px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.game-card:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) {
+  .game-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent);
+  }
+}
+
+.game-emoji {
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  line-height: 1;
+  filter: drop-shadow(0 6px 10px rgba(45, 49, 66, 0.15));
+}
+
+.game-title {
+  font-size: clamp(1.3rem, 4.5vw, 1.7rem);
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.game-desc {
+  font-size: clamp(0.95rem, 3vw, 1.05rem);
+  opacity: 0.7;
+  line-height: 1.5;
+}
+
+.game-tag {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+footer {
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🎮 เกมของหนู</h1>
+    <p class="subtitle">เลือกเกมที่อยากเล่นได้เลย!</p>
+  </header>
+
+  <div class="games">
+    <a class="game-card" href="memory-games.html">
+      <div class="game-emoji">🎴</div>
+      <div class="game-title">เกมจับคู่</div>
+      <div class="game-desc">พลิกการ์ดหาคู่สัตว์ที่เหมือนกัน ฝึกความจำ เล่นได้ 1–2 คน</div>
+      <span class="game-tag">ฝึกความจำ</span>
+    </a>
+
+    <a class="game-card" href="spelling-game.html">
+      <div class="game-emoji">🔤</div>
+      <div class="game-title">เกมสะกดชื่อสัตว์</div>
+      <div class="game-desc">ดูรูปสัตว์แล้วสะกดชื่อ ฝึกอ่านได้ทั้งไทยและอังกฤษ</div>
+      <span class="game-tag">ฝึกสะกดคำ</span>
+    </a>
+  </div>
+
+  <footer>ทำด้วย ❤️ สำหรับลูกๆ</footer>
+</div>
+</body>
+</html>
