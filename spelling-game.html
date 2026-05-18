@@ -375,6 +375,17 @@ body::before {
     </div>
 
     <div class="option-group">
+      <span class="option-label">หมวด</span>
+      <div class="option-buttons" id="categoryOptions">
+        <button class="option-btn selected" data-value="animals">สัตว์</button>
+        <button class="option-btn" data-value="fruits">ผลไม้</button>
+        <button class="option-btn" data-value="colors">สี</button>
+        <button class="option-btn" data-value="objects">ของใช้</button>
+        <button class="option-btn" data-value="all">รวมทุกหมวด</button>
+      </div>
+    </div>
+
+    <div class="option-group">
       <span class="option-label">โหมดเล่น</span>
       <div class="option-buttons" id="modeOptions">
         <button class="option-btn selected" data-value="order">เรียงทีละตัว</button>
@@ -413,33 +424,9 @@ body::before {
   </div>
 </div>
 
+<script src="categories.js"></script>
 <script>
-// ─── คลังสัตว์: emoji + ชื่อไทย + ชื่ออังกฤษ ───
-// อยากเพิ่ม/แก้สัตว์ แก้ที่ ANIMALS นี้ได้เลย
-const ANIMALS = [
-  { emoji: '🐶', th: 'หมา',     en: 'Dog' },
-  { emoji: '🐱', th: 'แมว',     en: 'Cat' },
-  { emoji: '🐰', th: 'กระต่าย', en: 'Rabbit' },
-  { emoji: '🐼', th: 'แพนด้า',  en: 'Panda' },
-  { emoji: '🦊', th: 'จิ้งจอก', en: 'Fox' },
-  { emoji: '🐻', th: 'หมี',     en: 'Bear' },
-  { emoji: '🦁', th: 'สิงโต',   en: 'Lion' },
-  { emoji: '🐯', th: 'เสือ',    en: 'Tiger' },
-  { emoji: '🐸', th: 'กบ',      en: 'Frog' },
-  { emoji: '🐵', th: 'ลิง',     en: 'Monkey' },
-  { emoji: '🐮', th: 'วัว',     en: 'Cow' },
-  { emoji: '🐷', th: 'หมู',     en: 'Pig' },
-  { emoji: '🐘', th: 'ช้าง',    en: 'Elephant' },
-  { emoji: '🐠', th: 'ปลา',     en: 'Fish' },
-  { emoji: '🐔', th: 'ไก่',     en: 'Chicken' },
-  { emoji: '🐦', th: 'นก',      en: 'Bird' },
-  { emoji: '🐝', th: 'ผึ้ง',    en: 'Bee' },
-  { emoji: '🐢', th: 'เต่า',    en: 'Turtle' },
-  { emoji: '🦆', th: 'เป็ด',    en: 'Duck' },
-  { emoji: '🐍', th: 'งู',      en: 'Snake' },
-  { emoji: '🐴', th: 'ม้า',     en: 'Horse' },
-  { emoji: '🐑', th: 'แกะ',     en: 'Sheep' },
-];
+// คลังคำมาจาก categories.js แยกเป็นหมวด (เลือกหมวดในหน้าตั้งค่า)
 
 const PLAYER_AVATARS = ['🦁', '🐯'];
 const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
@@ -465,7 +452,7 @@ function segment(word, lang) {
 }
 
 let state = {
-  lang: 'th', mode: 'order', numPlayers: 1,
+  lang: 'th', mode: 'order', numPlayers: 1, category: 'animals',
   totalRounds: 10, round: 1,
   scores: [0, 0], currentPlayer: 0,
   animal: null, units: [],
@@ -597,9 +584,10 @@ function renderPlayers() {
 }
 
 function pickAnimal() {
+  const pool = getCategoryPool(state.category);
   let a;
-  do { a = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]; }
-  while (state.recent.includes(a.emoji) && ANIMALS.length > state.recent.length);
+  do { a = pool[Math.floor(Math.random() * pool.length)]; }
+  while (state.recent.includes(a.emoji) && pool.length > state.recent.length);
   state.recent.push(a.emoji);
   if (state.recent.length > 6) state.recent.shift();
   return a;
@@ -733,7 +721,7 @@ function setupWord() {
   const slots = document.getElementById('slots');
   slots.innerHTML = '<div class="slot blank-target" style="min-width:90px">?</div>';
 
-  const others = shuffle(ANIMALS.filter(a => a.emoji !== state.animal.emoji))
+  const others = shuffle(getCategoryPool(state.category).filter(a => a.emoji !== state.animal.emoji))
     .slice(0, 2).map(a => a[state.lang]);
   const opts = shuffle([correct, ...others]);
 
@@ -879,6 +867,7 @@ document.querySelectorAll('.option-buttons').forEach(group => {
     group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     if (group.id === 'langOptions') state.lang = btn.dataset.value;
+    else if (group.id === 'categoryOptions') state.category = btn.dataset.value;
     else if (group.id === 'modeOptions') state.mode = btn.dataset.value;
     else if (group.id === 'playerOptions') state.numPlayers = parseInt(btn.dataset.value);
     else if (group.id === 'roundOptions') state.totalRounds = parseInt(btn.dataset.value);
