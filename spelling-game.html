@@ -94,6 +94,8 @@ body::before {
 }
 
 .header-right { display: flex; align-items: center; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+a.icon-btn { text-decoration: none; color: var(--text); }
 
 .icon-btn {
   width: 42px;
@@ -289,8 +291,29 @@ body::before {
   transition: transform 0.3s;
   max-height: 90vh;
   overflow-y: auto;
+  position: relative;
 }
 .modal.show .modal-content { transform: scale(1); }
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.modal-close:active { transform: scale(0.9); }
 .modal h2 { font-size: 26px; margin-bottom: 8px; color: var(--primary); }
 .modal p { margin-bottom: 20px; opacity: 0.7; }
 
@@ -299,7 +322,8 @@ body::before {
 .option-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .option-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  white-space: nowrap;
   min-width: 80px;
   padding: 12px;
   border: 2px solid #eee;
@@ -338,7 +362,10 @@ body::before {
 <body>
 <div class="app">
   <header class="header">
-    <div class="logo">เกม<span>สะกดคำ</span></div>
+    <div class="header-left">
+      <a class="icon-btn" href="index.html" aria-label="กลับไปหน้าเมนู">←</a>
+      <div class="logo">เกม<span>สะกดคำ</span></div>
+    </div>
     <div class="header-right">
       <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
       <div class="progress">📝 <span id="progress">1/10</span></div>
@@ -363,6 +390,7 @@ body::before {
 
 <div class="modal" id="settingsModal">
   <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()" aria-label="ปิด">×</button>
     <h2>ตั้งค่าเกม</h2>
     <p>เลือกภาษา โหมด และจำนวนผู้เล่น</p>
 
@@ -854,6 +882,10 @@ function launchConfetti() {
 }
 
 function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
 
 function applySettings() {
   document.getElementById('settingsModal').classList.remove('show');
