@@ -473,6 +473,17 @@ body::before {
     </div>
 
     <div class="option-group">
+      <span class="option-label">หมวด</span>
+      <div class="option-buttons" id="categoryOptions">
+        <button class="option-btn selected" data-value="animals">สัตว์</button>
+        <button class="option-btn" data-value="fruits">ผลไม้</button>
+        <button class="option-btn" data-value="colors">สี</button>
+        <button class="option-btn" data-value="objects">ของใช้</button>
+        <button class="option-btn" data-value="all">รวมทุกหมวด</button>
+      </div>
+    </div>
+
+    <div class="option-group">
       <span class="option-label">เวลาต่อรอบ (โหมด 2 คน)</span>
       <div class="option-buttons" id="timeOptions">
         <button class="option-btn" data-value="0">ไม่จำกัด</button>
@@ -495,18 +506,9 @@ body::before {
   </div>
 </div>
 
+<script src="categories.js"></script>
 <script>
-// ของแต่ละการ์ด — เปลี่ยนเป็น emoji อะไรก็ได้ หรือเปลี่ยนเป็น <img> ทีหลังก็ได้
-const EMOJI_POOL = ['🐶','🐱','🐰','🐼','🦊','🐻','🦁','🐯','🐸','🐵','🐨','🐮','🐷','🦄','🐙','🦋','🐳','🦉','🐢','🐝'];
-
-// ชื่อภาษาอังกฤษของสัตว์แต่ละตัว — สำหรับเสียงพูด (ลูกได้เรียนคำศัพท์ไปด้วย)
-const EMOJI_NAMES = {
-  '🐶': 'Dog',     '🐱': 'Cat',     '🐰': 'Rabbit',  '🐼': 'Panda',
-  '🦊': 'Fox',     '🐻': 'Bear',    '🦁': 'Lion',    '🐯': 'Tiger',
-  '🐸': 'Frog',    '🐵': 'Monkey',  '🐨': 'Koala',   '🐮': 'Cow',
-  '🐷': 'Pig',     '🦄': 'Unicorn', '🐙': 'Octopus', '🦋': 'Butterfly',
-  '🐳': 'Whale',   '🦉': 'Owl',     '🐢': 'Turtle',  '🐝': 'Bee',
-};
+// ของในแต่ละการ์ดมาจากคลังคำแยกหมวดใน categories.js (เลือกหมวดในหน้าตั้งค่า)
 
 const PLAYER_AVATARS = ['🦁', '🐯'];
 const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
@@ -532,7 +534,7 @@ function pickGrid(pairs) {
 let state = {
   cards: [], flipped: [], matched: 0,
   scores: [0, 0], currentPlayer: 0,
-  numPlayers: 2, difficulty: 'easy',
+  numPlayers: 2, difficulty: 'easy', category: 'animals',
   locked: false, startTime: null, timerId: null,
   // เวลาต่อรอบ (วินาที): 0 = ไม่จำกัด
   turnTimeLimit: 30, turnTimeLeft: 0, turnTimerId: null,
@@ -644,9 +646,10 @@ document.addEventListener('touchend', e => {
 
 function newGame() {
   const { pairs } = DIFFICULTY[state.difficulty];
-  const chosen = [...EMOJI_POOL].sort(() => Math.random() - 0.5).slice(0, pairs);
+  const pool = getCategoryPool(state.category);
+  const chosen = [...pool].sort(() => Math.random() - 0.5).slice(0, pairs);
   state.cards = [...chosen, ...chosen]
-    .map((emoji, i) => ({ emoji, id: i }))
+    .map((item, i) => ({ emoji: item.emoji, name: item.en, id: i }))
     .sort(() => Math.random() - 0.5);
   state.flipped = [];
   state.matched = 0;
@@ -761,7 +764,7 @@ function flipCard(idx, el) {
   el.classList.add('flipped');
   audio.flip();
   // พูดชื่อสัตว์ภาษาอังกฤษหลังเสียง click เล็กน้อย เพื่อไม่ให้ซ้อนกัน
-  const name = EMOJI_NAMES[state.cards[idx].emoji];
+  const name = state.cards[idx].name;
   if (name) setTimeout(() => audio.speak(name), 120);
   state.flipped.push({ idx, el });
 
@@ -893,6 +896,8 @@ document.querySelectorAll('.option-buttons').forEach(group => {
       state.numPlayers = parseInt(btn.dataset.value);
     } else if (group.id === 'difficultyOptions') {
       state.difficulty = btn.dataset.value;
+    } else if (group.id === 'categoryOptions') {
+      state.category = btn.dataset.value;
     } else if (group.id === 'timeOptions') {
       state.turnTimeLimit = parseInt(btn.dataset.value);
     }
