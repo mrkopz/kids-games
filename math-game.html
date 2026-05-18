@@ -366,7 +366,15 @@ a.icon-btn { text-decoration: none; color: var(--text); }
   <div class="modal-content">
     <button class="modal-close" onclick="closeSettings()" aria-label="ปิด">×</button>
     <h2>ตั้งค่าเกม</h2>
-    <p>เลือกแบบโจทย์และระดับชั้น</p>
+    <p>เลือกภาษา แบบโจทย์ และระดับชั้น</p>
+
+    <div class="option-group">
+      <span class="option-label">ภาษา (เสียงอ่านโจทย์)</span>
+      <div class="option-buttons" id="langOptions">
+        <button class="option-btn selected" data-value="th">ไทย</button>
+        <button class="option-btn" data-value="en">อังกฤษ</button>
+      </div>
+    </div>
 
     <div class="option-group">
       <span class="option-label">แบบโจทย์</span>
@@ -435,11 +443,14 @@ const LEVELS = {
 };
 const OP_KEYS = ['add', 'sub', 'mul', 'div'];
 const OP_SYM  = { add: '+', sub: '−', mul: '×', div: '÷' };
-const OP_WORD = { add: 'บวก', sub: 'ลบ', mul: 'คูณ', div: 'หาร' };
+const OP_WORD = {
+  th: { add: 'บวก', sub: 'ลบ', mul: 'คูณ', div: 'หาร' },
+  en: { add: 'plus', sub: 'minus', mul: 'times', div: 'divided by' },
+};
 const PRAISE  = ['เก่งมาก!', 'เยี่ยมไปเลย!', 'ถูกต้อง!', 'สุดยอด!', 'เก่งจัง!'];
 
 let state = {
-  op: 'add', level: 'kinder', numPlayers: 1,
+  lang: 'th', op: 'add', level: 'kinder', numPlayers: 1,
   totalRounds: 10, round: 1,
   scores: [0, 0], currentPlayer: 0,
   problem: null, locked: false,
@@ -486,24 +497,34 @@ const audio = {
     });
   },
   _lastSpeak: 0,
-  speak(text) {
-    if (!this.enabled) return;
-    if (!('speechSynthesis' in window)) return;
+  // คืน true ถ้าเริ่มพูดจริง — onEnd จะถูกเรียกเมื่อพูดจบ (หรือพลาด)
+  speak(text, lang, onEnd) {
+    if (!this.enabled) return false;
+    if (!('speechSynthesis' in window)) return false;
     // iOS Safari ค้างทั้งหน้าถ้าสั่ง cancel()+speak() รัวๆ → throttle 250ms
     const now = Date.now();
-    if (now - this._lastSpeak < 250) return;
+    if (now - this._lastSpeak < 250) return false;
     this._lastSpeak = now;
     try {
       if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'th-TH';
-      const v = (speechSynthesis.getVoices() || []).find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+      u.lang = lang === 'en' ? 'en-US' : 'th-TH';
+      const code = lang === 'en' ? 'en' : 'th';
+      const v = (speechSynthesis.getVoices() || []).find(v => v.lang && v.lang.toLowerCase().startsWith(code));
       if (v) u.voice = v;
       u.rate = 0.85;
       u.pitch = 1.12;
       u.volume = 1;
+      if (onEnd) {
+        let done = false;
+        const fire = () => { if (!done) { done = true; onEnd(); } };
+        u.onend = fire;
+        u.onerror = fire;
+      }
       speechSynthesis.speak(u);
+      return true;
     } catch (e) { /* ปล่อยผ่าน อย่าให้เกมค้าง */ }
+    return false;
   }
 };
 if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
@@ -585,7 +606,7 @@ function genProblem() {
     a = q * b;
     ans = q;
   }
-  return { a, b, sym: OP_SYM[op], word: OP_WORD[op], ans };
+  return { a, b, op, sym: OP_SYM[op], ans };
 }
 
 function makeChoices(ans) {
@@ -613,7 +634,10 @@ function nextRound() {
   document.getElementById('problem').innerHTML =
     `<span style="animation:pop 0.45s cubic-bezier(0.34,1.56,0.64,1)">${p.a} ${p.sym} ${p.b} = ?</span>`;
   renderChoices();
-  audio.speak(`${p.a} ${p.word} ${p.b} เท่ากับเท่าไร`);
+  const text = state.lang === 'en'
+    ? `What is ${p.a} ${OP_WORD.en[p.op]} ${p.b}?`
+    : `${p.a} ${OP_WORD.th[p.op]} ${p.b} เท่ากับเท่าไร`;
+  audio.speak(text, state.lang);
 }
 
 function renderChoices() {
@@ -641,7 +665,14 @@ function pickChoice(val, btn) {
     renderPlayers();
     showStatus(PRAISE[rand(0, PRAISE.length - 1)], 'success');
     miniConfetti();
-    setTimeout(advance, 900);
+    let advanced = false;
+    const go = () => { if (advanced) return; advanced = true; advance(); };
+    const txt = state.lang === 'en'
+      ? `${state.problem.ans}. Correct.`
+      : `${state.problem.ans} ถูกค่ะ`;
+    // ไปข้อใหม่หลังพูดจบ + เว้นช่วงสั้นๆ (fallback กันค้างถ้าเสียงไม่ทำงาน)
+    const spoke = audio.speak(txt, state.lang, () => setTimeout(go, 400));
+    setTimeout(go, spoke ? 4000 : 1000);
     return;
   }
 
@@ -654,6 +685,7 @@ function pickChoice(val, btn) {
     // คนเดียว — ให้ลองใหม่ ปิดเฉพาะปุ่มที่ผิด ไม่ตัดคะแนน
     btn.classList.add('used');
     showStatus('ลองอีกครั้งนะ', 'fail');
+    audio.speak('ผิดค่ะ ลองใหม่', 'th');
   } else {
     // สองคน — ตอบได้ครั้งเดียว เฉลยคำตอบ แล้วสลับตา
     state.locked = true;
@@ -662,7 +694,10 @@ function pickChoice(val, btn) {
       c.classList.add('used');
     });
     showStatus('คำตอบคือ ' + state.problem.ans, 'fail');
-    setTimeout(advance, 1500);
+    let advanced = false;
+    const go = () => { if (advanced) return; advanced = true; advance(); };
+    const spoke = audio.speak(`ผิดค่ะ คำตอบคือ ${state.problem.ans}`, 'th', () => setTimeout(go, 500));
+    setTimeout(go, spoke ? 4500 : 1800);
   }
 }
 
@@ -758,7 +793,8 @@ document.querySelectorAll('.option-buttons').forEach(group => {
     if (!btn) return;
     group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
-    if (group.id === 'opOptions') state.op = btn.dataset.value;
+    if (group.id === 'langOptions') state.lang = btn.dataset.value;
+    else if (group.id === 'opOptions') state.op = btn.dataset.value;
     else if (group.id === 'levelOptions') state.level = btn.dataset.value;
     else if (group.id === 'playerOptions') state.numPlayers = parseInt(btn.dataset.value);
     else if (group.id === 'roundOptions') state.totalRounds = parseInt(btn.dataset.value);

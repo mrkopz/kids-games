@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เรียนตัวอักษร">
+<title>เรียนตัวอักษร ก-ฮ A-Z 🔤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg-1: #FFF5E6;
+  --bg-2: #FFE8D6;
+  --primary: #FF7E5F;
+  --primary-dark: #E85D3C;
+  --accent: #4ECDC4;
+  --accent-dark: #3BA39C;
+  --text: #2D3142;
+  --shadow: 0 8px 24px rgba(45, 49, 66, 0.12);
+  --shadow-lg: 0 16px 40px rgba(45, 49, 66, 0.18);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 126, 95, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(78, 205, 196, 0.10) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.progress {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+a.icon-btn { text-decoration: none; color: var(--text); }
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted { opacity: 0.5; }
+
+/* ─── สลับชุดอักษร ก-ฮ / A-Z ─── */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.tab {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 16px;
+  background: white;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.active { background: var(--primary); color: white; }
+
+/* ─── บัตรคำ ─── */
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.card {
+  background: white;
+  border-radius: 32px;
+  box-shadow: var(--shadow-lg);
+  padding: 24px 28px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.card:active { transform: scale(0.98); }
+
+.card-letter {
+  font-size: min(34vw, 26vh, 180px);
+  line-height: 1;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.card-emoji {
+  font-size: min(20vw, 16vh, 110px);
+  line-height: 1;
+  filter: drop-shadow(0 8px 14px rgba(45,49,66,0.15));
+}
+.card-word {
+  font-size: clamp(1.8rem, 8vw, 3rem);
+  font-weight: 700;
+  color: var(--accent-dark);
+  font-family: 'Fredoka', sans-serif;
+}
+.card-chant {
+  font-size: clamp(1.1rem, 4.6vw, 1.6rem);
+  font-weight: 600;
+  color: var(--primary);
+}
+.card-chant:empty { display: none; }
+.card-meaning {
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+  opacity: 0.7;
+}
+.tap-hint {
+  font-size: 0.85rem;
+  opacity: 0.45;
+  margin-top: 2px;
+}
+
+.controls { display: flex; gap: 12px; margin-top: 16px; flex-shrink: 0; }
+
+.btn {
+  flex: 1;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+.btn-secondary:active { transform: scale(0.96); }
+
+@media (min-width: 768px) {
+  .logo { font-size: 30px; }
+  .progress { font-size: 20px; }
+  .tab { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <a class="icon-btn" href="index.html" aria-label="กลับไปหน้าเมนู">←</a>
+      <div class="logo">เรียน<span>ตัวอักษร</span></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="progress">🔤 <span id="progress">1/44</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="tabTH" onclick="setSet('th')">ก – ฮ</button>
+    <button class="tab" id="tabEN" onclick="setSet('en')">A – Z</button>
+  </div>
+
+  <div class="stage">
+    <div class="card" id="card" onclick="speakCurrent()">
+      <div class="card-letter" id="cardLetter">ก</div>
+      <div class="card-emoji" id="cardEmoji">🐔</div>
+      <div class="card-word" id="cardWord">ก ไก่</div>
+      <div class="card-chant" id="cardChant">ก เอ๋ย ก ไก่</div>
+      <div class="card-meaning" id="cardMeaning">chicken</div>
+      <div class="tap-hint">แตะการ์ดเพื่อฟังอีกครั้ง</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="prev()">◀ ก่อนหน้า</button>
+    <button class="btn btn-primary" onclick="next()">ถัดไป ▶</button>
+  </div>
+</div>
+
+<script>
+// ─── พยัญชนะไทย 44 ตัว ตามแม่บท "ก เอ๋ย ก ไก่" ───
+// { ch: ตัวอักษร, word: คำประจำตัว, emoji, en: คำแปลอังกฤษ }
+// กลอน "ก เอ๋ย ก ไก่" — มี "เอ๋ย" เฉพาะตัว ก / ตัวอื่นเป็น "<ตัว> <คำ> <วรรคสร้อย>"
+// name = ชื่อพยัญชนะ (เสียงพูดให้ TTS อ่านธรรมชาติ เช่น "กอ"), rhyme = วรรคสร้อย
+const THAI = [
+  { ch:'ก', name:'กอ', thing:'ไก่',    rhyme:'',           emoji:'🐔', en:'chicken' },
+  { ch:'ข', name:'ขอ', thing:'ไข่',    rhyme:'ในเล้า',     emoji:'🥚', en:'egg' },
+  { ch:'ฃ', name:'ขอ', thing:'ขวด',   rhyme:'ของเรา',     emoji:'🍾', en:'bottle' },
+  { ch:'ค', name:'คอ', thing:'ควาย',  rhyme:'เข้านา',     emoji:'🐃', en:'buffalo' },
+  { ch:'ฅ', name:'คอ', thing:'คน',     rhyme:'ขึงขัง',     emoji:'🧑', en:'person' },
+  { ch:'ฆ', name:'คอ', thing:'ระฆัง', rhyme:'ข้างฝา',     emoji:'🔔', en:'bell' },
+  { ch:'ง', name:'งอ', thing:'งู',     rhyme:'ใจกล้า',     emoji:'🐍', en:'snake' },
+  { ch:'จ', name:'จอ', thing:'จาน',   rhyme:'ใช้ดี',      emoji:'🍽️', en:'plate' },
+  { ch:'ฉ', name:'ฉอ', thing:'ฉิ่ง',   rhyme:'ตีดัง',      emoji:'🎶', en:'cymbals' },
+  { ch:'ช', name:'ชอ', thing:'ช้าง',  rhyme:'วิ่งหนี',     emoji:'🐘', en:'elephant' },
+  { ch:'ซ', name:'ซอ', thing:'โซ่',    rhyme:'ล่ามที',     emoji:'⛓️', en:'chain' },
+  { ch:'ฌ', name:'ชอ', thing:'เฌอ',   rhyme:'คู่กัน',      emoji:'🌳', en:'tree' },
+  { ch:'ญ', name:'ยอ', thing:'หญิง',  rhyme:'โสภา',       emoji:'👧', en:'woman' },
+  { ch:'ฎ', name:'ดอ', thing:'ชฎา',   rhyme:'สวมพลัน',   emoji:'👑', en:'headdress' },
+  { ch:'ฏ', name:'ตอ', thing:'ปฏัก',  rhyme:'หุนหัน',     emoji:'🔱', en:'goad' },
+  { ch:'ฐ', name:'ถอ', thing:'ฐาน',   rhyme:'เข้ามารอง', emoji:'🟫', en:'pedestal' },
+  { ch:'ฑ', name:'ทอ', thing:'มณโฑ',  rhyme:'หน้าขาว',   emoji:'👩', en:'Montho' },
+  { ch:'ฒ', name:'ทอ', thing:'ผู้เฒ่า',rhyme:'เดินย่อง',   emoji:'👴', en:'elder' },
+  { ch:'ณ', name:'นอ', thing:'เณร',   rhyme:'ไม่มอง',     emoji:'🙏', en:'novice monk' },
+  { ch:'ด', name:'ดอ', thing:'เด็ก',  rhyme:'ต้องนิมนต์',emoji:'👶', en:'child' },
+  { ch:'ต', name:'ตอ', thing:'เต่า',  rhyme:'หลังตุง',    emoji:'🐢', en:'turtle' },
+  { ch:'ถ', name:'ถอ', thing:'ถุง',    rhyme:'แบกขน',     emoji:'👜', en:'bag' },
+  { ch:'ท', name:'ทอ', thing:'ทหาร',  rhyme:'อดทน',      emoji:'💂', en:'soldier' },
+  { ch:'ธ', name:'ทอ', thing:'ธง',     rhyme:'คนนิยม',    emoji:'🚩', en:'flag' },
+  { ch:'น', name:'นอ', thing:'หนู',    rhyme:'ขวักไขว่',   emoji:'🐭', en:'mouse' },
+  { ch:'บ', name:'บอ', thing:'ใบไม้', rhyme:'ทับถม',     emoji:'🍃', en:'leaf' },
+  { ch:'ป', name:'ปอ', thing:'ปลา',   rhyme:'ตากลม',     emoji:'🐟', en:'fish' },
+  { ch:'ผ', name:'ผอ', thing:'ผึ้ง',   rhyme:'ทำรัง',      emoji:'🐝', en:'bee' },
+  { ch:'ฝ', name:'ฝอ', thing:'ฝา',     rhyme:'ทนทาน',     emoji:'🔘', en:'lid' },
+  { ch:'พ', name:'พอ', thing:'พาน',   rhyme:'วางตั้ง',    emoji:'🏆', en:'tray' },
+  { ch:'ฟ', name:'ฟอ', thing:'ฟัน',    rhyme:'สะอาดจัง',  emoji:'🦷', en:'tooth' },
+  { ch:'ภ', name:'พอ', thing:'สำเภา', rhyme:'กางใบ',     emoji:'⛵', en:'junk boat' },
+  { ch:'ม', name:'มอ', thing:'ม้า',    rhyme:'คึกคัก',     emoji:'🐴', en:'horse' },
+  { ch:'ย', name:'ยอ', thing:'ยักษ์',  rhyme:'เขี้ยวใหญ่', emoji:'👹', en:'giant' },
+  { ch:'ร', name:'รอ', thing:'เรือ',   rhyme:'พายไป',     emoji:'🚣', en:'boat' },
+  { ch:'ล', name:'ลอ', thing:'ลิง',    rhyme:'ไต่ราว',     emoji:'🐵', en:'monkey' },
+  { ch:'ว', name:'วอ', thing:'แหวน',  rhyme:'ลงยา',      emoji:'💍', en:'ring' },
+  { ch:'ศ', name:'สอ', thing:'ศาลา',  rhyme:'เงียบเหงา', emoji:'🛕', en:'pavilion' },
+  { ch:'ษ', name:'สอ', thing:'ฤๅษี',   rhyme:'หนวดยาว',   emoji:'🧙', en:'hermit' },
+  { ch:'ส', name:'สอ', thing:'เสือ',   rhyme:'ดาวคะนอง', emoji:'🐯', en:'tiger' },
+  { ch:'ห', name:'หอ', thing:'หีบ',    rhyme:'ใส่ผ้า',     emoji:'📦', en:'chest' },
+  { ch:'ฬ', name:'ลอ', thing:'จุฬา',  rhyme:'ท่าผยอง',   emoji:'🪁', en:'kite' },
+  { ch:'อ', name:'ออ', thing:'อ่าง',   rhyme:'เนืองนอง',  emoji:'🛁', en:'basin' },
+  { ch:'ฮ', name:'ฮอ', thing:'นกฮูก', rhyme:'ตาโต',      emoji:'🦉', en:'owl' },
+];
+
+// ─── A–Z ─── snd = เสียงโฟนิกส์ (สะกดให้เสียงอังกฤษอ่านใกล้เคียง)
+// ท่องแบบ Phonics: "A says ah, ah, Apple"
+const EN = [
+  { ch:'A', word:'Apple',      snd:'ah',  emoji:'🍎', th:'แอปเปิล' },
+  { ch:'B', word:'Ball',       snd:'buh', emoji:'⚽', th:'ลูกบอล' },
+  { ch:'C', word:'Cat',        snd:'kuh', emoji:'🐱', th:'แมว' },
+  { ch:'D', word:'Dog',        snd:'duh', emoji:'🐶', th:'หมา' },
+  { ch:'E', word:'Egg',        snd:'eh',  emoji:'🥚', th:'ไข่' },
+  { ch:'F', word:'Fish',       snd:'fuh', emoji:'🐟', th:'ปลา' },
+  { ch:'G', word:'Goat',       snd:'guh', emoji:'🐐', th:'แพะ' },
+  { ch:'H', word:'Hat',        snd:'huh', emoji:'🧢', th:'หมวก' },
+  { ch:'I', word:'Igloo',      snd:'ih',  emoji:'🏠', th:'กระท่อมน้ำแข็ง' },
+  { ch:'J', word:'Jellyfish',  snd:'juh', emoji:'🪼', th:'แมงกะพรุน' },
+  { ch:'K', word:'Key',        snd:'kuh', emoji:'🔑', th:'กุญแจ' },
+  { ch:'L', word:'Lion',       snd:'luh', emoji:'🦁', th:'สิงโต' },
+  { ch:'M', word:'Monkey',     snd:'muh', emoji:'🐵', th:'ลิง' },
+  { ch:'N', word:'Nest',       snd:'nuh', emoji:'🪺', th:'รังนก' },
+  { ch:'O', word:'Octopus',    snd:'oh',  emoji:'🐙', th:'ปลาหมึก' },
+  { ch:'P', word:'Pig',        snd:'puh', emoji:'🐷', th:'หมู' },
+  { ch:'Q', word:'Queen',      snd:'kwuh',emoji:'👸', th:'ราชินี' },
+  { ch:'R', word:'Rabbit',     snd:'ruh', emoji:'🐰', th:'กระต่าย' },
+  { ch:'S', word:'Sun',        snd:'sss', emoji:'☀️', th:'พระอาทิตย์' },
+  { ch:'T', word:'Tiger',      snd:'tuh', emoji:'🐯', th:'เสือ' },
+  { ch:'U', word:'Umbrella',   snd:'uh',  emoji:'☂️', th:'ร่ม' },
+  { ch:'V', word:'Violin',     snd:'vuh', emoji:'🎻', th:'ไวโอลิน' },
+  { ch:'W', word:'Watermelon', snd:'wuh', emoji:'🍉', th:'แตงโม' },
+  { ch:'X', word:'Box',        snd:'ks',  emoji:'📦', th:'กล่อง' },
+  { ch:'Y', word:'Yo-yo',      snd:'yuh', emoji:'🪀', th:'โยโย่' },
+  { ch:'Z', word:'Zebra',      snd:'zzz', emoji:'🦓', th:'ม้าลาย' },
+];
+
+let setKey = 'th';
+let idx = 0;
+
+// ─── เสียง: Web Speech API ─── (อ่านชื่อตัวอักษร + คำ)
+const audio = {
+  enabled: true,
+  _last: 0,
+  speak(text, lang) {
+    if (!this.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    const now = Date.now();
+    if (now - this._last < 200) return;
+    this._last = now;
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang === 'en' ? 'en-US' : 'th-TH';
+      const code = lang === 'en' ? 'en' : 'th';
+      // เลือกเสียงที่ฟังธรรมชาติ: เสียงในเครื่อง (เช่น Kanya/Narisa บน Apple) หรือเสียง Google ก่อน
+      const matches = (speechSynthesis.getVoices() || []).filter(v => v.lang && v.lang.toLowerCase().startsWith(code));
+      const v = matches.find(v => /kanya|narisa|premwadee|siri|google|natural|neural/i.test(v.name))
+             || matches.find(v => v.localService)
+             || matches[0];
+      if (v) u.voice = v;
+      u.rate = 0.55;   // ช้ามาก สำหรับเด็กเตรียมอนุบาล
+      u.pitch = 1.0;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) { /* อย่าให้หน้าค้าง */ }
+  }
+};
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (!audio.enabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// กันจอซูมบน iPad เวลาเด็กกดเร็วๆ
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false })
+);
+
+function data() { return setKey === 'th' ? THAI : EN; }
+
+function render() {
+  const d = data()[idx];
+  document.getElementById('cardLetter').textContent = d.ch;
+  document.getElementById('cardEmoji').textContent = d.emoji;
+  if (setKey === 'th') {
+    document.getElementById('cardWord').textContent = `${d.ch} ${d.thing}`;
+    document.getElementById('cardChant').textContent = d.rhyme
+      ? `${d.ch} ${d.thing} ${d.rhyme}`
+      : `${d.ch} เอ๋ย ${d.ch} ${d.thing}`;
+    document.getElementById('cardMeaning').textContent = d.en;
+  } else {
+    document.getElementById('cardWord').textContent = d.word;
+    document.getElementById('cardChant').textContent = `${d.ch} says /${d.snd}/ — ${d.word}`;
+    document.getElementById('cardMeaning').textContent = d.th;
+  }
+  document.getElementById('progress').textContent = `${idx + 1}/${data().length}`;
+  // เล่นแอนิเมชัน pop ใหม่ทุกครั้งที่เปลี่ยนการ์ด
+  const card = document.getElementById('card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = '';
+  speakCurrent();
+}
+
+function speakCurrent() {
+  const d = data()[idx];
+  if (setKey === 'th') {
+    const say = d.rhyme
+      ? `${d.name} ${d.thing} ${d.rhyme}`         // "ขอ ไข่ ในเล้า"
+      : `${d.name} เอ๋ย ${d.name} ${d.thing}`;    // "กอ เอ๋ย กอ ไก่"
+    audio.speak(say, 'th');
+  } else audio.speak(`${d.ch} says ${d.snd}, ${d.snd}, ${d.word}.`, 'en'); // "A says ah, ah, Apple"
+}
+
+function next() { idx = (idx + 1) % data().length; render(); }
+function prev() { idx = (idx - 1 + data().length) % data().length; render(); }
+
+function setSet(key) {
+  if (setKey === key) return;
+  setKey = key;
+  idx = 0;
+  document.getElementById('tabTH').classList.toggle('active', key === 'th');
+  document.getElementById('tabEN').classList.toggle('active', key === 'en');
+  render();
+}
+
+// ปุ่มลูกศรซ้าย/ขวาบนคีย์บอร์ด (เผื่อใช้บนคอม)
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+});
+
+render();
+</script>
+</body>
+</html>
