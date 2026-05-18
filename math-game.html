@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เกมคณิตของหนู">
+<title>เกมคณิตของหนู 🔢</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  --bg-1: #FFF5E6;
+  --bg-2: #FFE8D6;
+  --primary: #FF7E5F;
+  --primary-dark: #E85D3C;
+  --accent: #4ECDC4;
+  --accent-dark: #3BA39C;
+  --player1: #FF6B9D;
+  --player2: #6BCBFF;
+  --text: #2D3142;
+  --shadow: 0 8px 24px rgba(45, 49, 66, 0.12);
+  --shadow-lg: 0 16px 40px rgba(45, 49, 66, 0.18);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 126, 95, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(78, 205, 196, 0.10) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.progress {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+a.icon-btn { text-decoration: none; color: var(--text); }
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted { opacity: 0.5; }
+
+.players { display: flex; gap: 12px; margin-bottom: 14px; flex-shrink: 0; }
+
+.player {
+  flex: 1;
+  background: white;
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s;
+  border: 3px solid transparent;
+}
+.player.active { transform: translateY(-4px); border-color: currentColor; box-shadow: var(--shadow-lg); }
+.player.p1 { color: var(--player1); }
+.player.p2 { color: var(--player2); }
+
+.player-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.player-info { flex: 1; min-width: 0; }
+.player-name { font-size: 14px; font-weight: 500; color: var(--text); opacity: 0.7; }
+.player-score { font-size: 22px; font-weight: 700; color: currentColor; line-height: 1.1; }
+
+/* ─── พื้นที่เล่นหลัก ─── */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.problem {
+  font-size: min(15vw, 13vh, 92px);
+  font-weight: 700;
+  color: var(--primary-dark);
+  font-family: 'Fredoka', sans-serif;
+  letter-spacing: 2px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 14px rgba(45,49,66,0.15));
+  animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.choices {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 600px;
+}
+
+.choice {
+  min-width: 112px;
+  height: 86px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: none;
+  background: white;
+  box-shadow: var(--shadow);
+  font-family: 'Fredoka', sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.2s;
+}
+.choice:active { transform: scale(0.93); }
+.choice.good { background: linear-gradient(135deg, #B4F8C8, #4ECDC4); color: white; }
+.choice.bad { background: #FFDDD6; color: var(--primary-dark); }
+.choice.used { opacity: 0.28; pointer-events: none; }
+.choice.shake { animation: shake 0.4s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-7px); }
+  40%,80% { transform: translateX(7px); }
+}
+
+.status {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: white;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+  white-space: nowrap;
+}
+.status.show { opacity: 1; transform: translate(-50%, 0); }
+.status.success { color: var(--accent-dark); }
+.status.fail { color: var(--primary-dark); }
+
+.controls { display: flex; gap: 12px; margin-top: 14px; flex-shrink: 0; }
+
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 49, 66, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal.show { opacity: 1; pointer-events: auto; }
+
+.modal-content {
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal.show .modal-content { transform: scale(1); }
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.modal-close:active { transform: scale(0.9); }
+.modal h2 { font-size: 26px; margin-bottom: 8px; color: var(--primary); }
+.modal p { margin-bottom: 20px; opacity: 0.7; }
+
+.option-group { margin-bottom: 18px; text-align: left; }
+.option-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.option-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.option-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  min-width: 80px;
+  padding: 12px;
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.option-btn.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+.winner-emoji { font-size: 72px; margin-bottom: 12px; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 99;
+  animation: fall 3s linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+@media (min-width: 768px) {
+  .logo { font-size: 30px; }
+  .progress { font-size: 20px; }
+  .player-score { font-size: 30px; }
+  .choice { font-size: 40px; height: 96px; min-width: 128px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <a class="icon-btn" href="index.html" aria-label="กลับไปหน้าเมนู">←</a>
+      <div class="logo">เกม<span>คณิต</span></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="progress">🔢 <span id="progress">1/10</span></div>
+    </div>
+  </header>
+
+  <div class="players" id="players"></div>
+
+  <div class="stage">
+    <div class="problem" id="problem">? + ? = ?</div>
+    <div class="choices" id="choices"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ ตั้งค่า</button>
+    <button class="btn btn-primary" onclick="newGame()">🔄 เกมใหม่</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()" aria-label="ปิด">×</button>
+    <h2>ตั้งค่าเกม</h2>
+    <p>เลือกแบบโจทย์และระดับชั้น</p>
+
+    <div class="option-group">
+      <span class="option-label">แบบโจทย์</span>
+      <div class="option-buttons" id="opOptions">
+        <button class="option-btn selected" data-value="add">บวก +</button>
+        <button class="option-btn" data-value="sub">ลบ −</button>
+        <button class="option-btn" data-value="mul">คูณ ×</button>
+        <button class="option-btn" data-value="div">หาร ÷</button>
+        <button class="option-btn" data-value="all">รวมทุกแบบ</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">ระดับชั้น</span>
+      <div class="option-buttons" id="levelOptions">
+        <button class="option-btn selected" data-value="kinder">อนุบาล</button>
+        <button class="option-btn" data-value="p12">ป.1–2</button>
+        <button class="option-btn" data-value="p34">ป.3–4</button>
+        <button class="option-btn" data-value="p56">ป.5–6</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">ผู้เล่น</span>
+      <div class="option-buttons" id="playerOptions">
+        <button class="option-btn selected" data-value="1">คนเดียว</button>
+        <button class="option-btn" data-value="2">สองคน</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">จำนวนข้อ</span>
+      <div class="option-buttons" id="roundOptions">
+        <button class="option-btn" data-value="5">5 ข้อ</button>
+        <button class="option-btn selected" data-value="10">10 ข้อ</button>
+        <button class="option-btn" data-value="15">15 ข้อ</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="applySettings()" style="margin-top: 12px;">เริ่มเกม</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content">
+    <div class="winner-emoji" id="winnerEmoji">🎉</div>
+    <h2 id="winnerTitle">เก่งมาก!</h2>
+    <p id="winnerSubtitle">เล่นได้ดีมากเลย</p>
+    <button class="btn btn-primary" onclick="closeWinner(); newGame();">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script>
+const PLAYER_AVATARS = ['🦁', '🐯'];
+const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
+
+// ─── ช่วงตัวเลขตามระดับชั้น (ปรับที่นี่ที่เดียว) ───
+// add/sub: ผลและตัวตั้งอยู่ในช่วง [min, max] — ลบจะไม่ติดลบ
+// mul: a อยู่ใน [aMin,aMax], b อยู่ใน [bMin,bMax]
+// div: ผลหาร q ∈ [qMin,qMax], ตัวหาร d ∈ [dMin,dMax] — หารลงตัวเสมอ
+const LEVELS = {
+  kinder: { add:{min:0,max:10},   sub:{min:0,max:10},   mul:{aMin:1,aMax:5,bMin:1,bMax:5},   div:{qMin:1,qMax:5,dMin:1,dMax:5} },
+  p12:    { add:{min:1,max:99},   sub:{min:1,max:99},   mul:{aMin:1,aMax:9,bMin:1,bMax:9},   div:{qMin:1,qMax:9,dMin:2,dMax:9} },
+  p34:    { add:{min:10,max:999}, sub:{min:10,max:999}, mul:{aMin:2,aMax:99,bMin:2,bMax:12}, div:{qMin:2,qMax:12,dMin:2,dMax:12} },
+  p56:    { add:{min:100,max:9999},sub:{min:100,max:9999},mul:{aMin:10,aMax:99,bMin:10,bMax:99},div:{qMin:2,qMax:99,dMin:2,dMax:12} },
+};
+const OP_KEYS = ['add', 'sub', 'mul', 'div'];
+const OP_SYM  = { add: '+', sub: '−', mul: '×', div: '÷' };
+const OP_WORD = { add: 'บวก', sub: 'ลบ', mul: 'คูณ', div: 'หาร' };
+const PRAISE  = ['เก่งมาก!', 'เยี่ยมไปเลย!', 'ถูกต้อง!', 'สุดยอด!', 'เก่งจัง!'];
+
+let state = {
+  op: 'add', level: 'kinder', numPlayers: 1,
+  totalRounds: 10, round: 1,
+  scores: [0, 0], currentPlayer: 0,
+  problem: null, locked: false,
+};
+
+// ─── เสียง: สังเคราะห์ด้วย Web Audio API ไม่ต้องโหลดไฟล์เสียง ───
+const audio = {
+  ctx: null,
+  enabled: true,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  beep(freq, duration, type = 'sine', volume = 0.15, startAt = 0) {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime + startAt;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration);
+  },
+  tap()  { this.beep(620, 0.07, 'triangle', 0.10); },
+  good() {
+    this.beep(523, 0.12, 'sine', 0.18, 0);
+    this.beep(659, 0.12, 'sine', 0.18, 0.10);
+    this.beep(784, 0.25, 'sine', 0.18, 0.20);
+  },
+  bad() {
+    this.beep(330, 0.15, 'sine', 0.12, 0);
+    this.beep(247, 0.20, 'sine', 0.12, 0.12);
+  },
+  win() {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => {
+      this.beep(f, 0.25, 'triangle', 0.2, i * 0.12);
+    });
+  },
+  _lastSpeak: 0,
+  speak(text) {
+    if (!this.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    // iOS Safari ค้างทั้งหน้าถ้าสั่ง cancel()+speak() รัวๆ → throttle 250ms
+    const now = Date.now();
+    if (now - this._lastSpeak < 250) return;
+    this._lastSpeak = now;
+    try {
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'th-TH';
+      const v = (speechSynthesis.getVoices() || []).find(v => v.lang && v.lang.toLowerCase().startsWith('th'));
+      if (v) u.voice = v;
+      u.rate = 0.85;
+      u.pitch = 1.12;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) { /* ปล่อยผ่าน อย่าให้เกมค้าง */ }
+  }
+};
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (audio.enabled) audio.init();
+  else if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// iOS ต้องการให้ AudioContext เริ่มจาก user gesture
+document.addEventListener('pointerdown', () => audio.init(), { once: true });
+
+// ─── กันจอซูมบน iPad เวลาเด็กกดเร็วๆ ───
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false })
+);
+let lastTap = { t: 0, x: 0, y: 0 };
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  const touch = e.changedTouches[0];
+  if (now - lastTap.t < 350 &&
+      Math.abs(touch.clientX - lastTap.x) < 30 &&
+      Math.abs(touch.clientY - lastTap.y) < 30) {
+    e.preventDefault();
+  }
+  lastTap = { t: now, x: touch.clientX, y: touch.clientY };
+}, { passive: false });
+
+function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function newGame() {
+  state.round = 1;
+  state.scores = [0, 0];
+  state.currentPlayer = 0;
+  renderPlayers();
+  nextRound();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('players');
+  el.innerHTML = '';
+  for (let i = 0; i < state.numPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = `player p${i+1} ${state.currentPlayer === i ? 'active' : ''}`;
+    div.innerHTML = `
+      <div class="player-avatar">${PLAYER_AVATARS[i]}</div>
+      <div class="player-info">
+        <div class="player-name">${PLAYER_NAMES[i]}</div>
+        <div class="player-score">${state.scores[i]} คะแนน</div>
+      </div>`;
+    el.appendChild(div);
+  }
+}
+
+function genProblem() {
+  const op = state.op === 'all' ? OP_KEYS[rand(0, 3)] : state.op;
+  const L = LEVELS[state.level];
+  let a, b, ans;
+  if (op === 'add') {
+    a = rand(L.add.min, L.add.max);
+    b = rand(L.add.min, L.add.max);
+    ans = a + b;
+  } else if (op === 'sub') {
+    a = rand(L.sub.min, L.sub.max);
+    b = rand(L.sub.min, a);
+    ans = a - b;
+  } else if (op === 'mul') {
+    a = rand(L.mul.aMin, L.mul.aMax);
+    b = rand(L.mul.bMin, L.mul.bMax);
+    ans = a * b;
+  } else { // div — สร้างจากผลหารกับตัวหารเพื่อให้ลงตัวเสมอ
+    const q = rand(L.div.qMin, L.div.qMax);
+    b = rand(L.div.dMin, L.div.dMax);
+    a = q * b;
+    ans = q;
+  }
+  return { a, b, sym: OP_SYM[op], word: OP_WORD[op], ans };
+}
+
+function makeChoices(ans) {
+  const set = new Set([ans]);
+  const deltas = shuffle([1, -1, 2, -2, 3, -3, 5, -5, 10, -10]);
+  for (const d of deltas) {
+    if (set.size >= 4) break;
+    const v = ans + d;
+    if (v >= 0 && !set.has(v)) set.add(v);
+  }
+  let guard = 0;
+  while (set.size < 4 && guard++ < 60) {
+    const v = Math.max(0, ans + rand(-12, 12));
+    if (!set.has(v)) set.add(v);
+  }
+  return shuffle([...set]);
+}
+
+function nextRound() {
+  if (state.round > state.totalRounds) { showWinner(); return; }
+  state.locked = false;
+  document.getElementById('progress').textContent = `${state.round}/${state.totalRounds}`;
+  state.problem = genProblem();
+  const p = state.problem;
+  document.getElementById('problem').innerHTML =
+    `<span style="animation:pop 0.45s cubic-bezier(0.34,1.56,0.64,1)">${p.a} ${p.sym} ${p.b} = ?</span>`;
+  renderChoices();
+  audio.speak(`${p.a} ${p.word} ${p.b} เท่ากับเท่าไร`);
+}
+
+function renderChoices() {
+  const el = document.getElementById('choices');
+  el.innerHTML = '';
+  for (const v of makeChoices(state.problem.ans)) {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = v;
+    btn.dataset.val = v;
+    btn.onclick = () => pickChoice(v, btn);
+    el.appendChild(btn);
+  }
+}
+
+function pickChoice(val, btn) {
+  if (state.locked) return;
+  audio.tap();
+
+  if (val === state.problem.ans) {
+    state.locked = true;
+    btn.classList.add('good');
+    audio.good();
+    state.scores[state.currentPlayer]++;
+    renderPlayers();
+    showStatus(PRAISE[rand(0, PRAISE.length - 1)], 'success');
+    miniConfetti();
+    setTimeout(advance, 900);
+    return;
+  }
+
+  // ตอบผิด
+  btn.classList.add('bad', 'shake');
+  btn.addEventListener('animationend', () => btn.classList.remove('shake'), { once: true });
+  audio.bad();
+
+  if (state.numPlayers === 1) {
+    // คนเดียว — ให้ลองใหม่ ปิดเฉพาะปุ่มที่ผิด ไม่ตัดคะแนน
+    btn.classList.add('used');
+    showStatus('ลองอีกครั้งนะ', 'fail');
+  } else {
+    // สองคน — ตอบได้ครั้งเดียว เฉลยคำตอบ แล้วสลับตา
+    state.locked = true;
+    document.querySelectorAll('.choice').forEach(c => {
+      if (Number(c.dataset.val) === state.problem.ans) c.classList.add('good');
+      c.classList.add('used');
+    });
+    showStatus('คำตอบคือ ' + state.problem.ans, 'fail');
+    setTimeout(advance, 1500);
+  }
+}
+
+function advance() {
+  state.round++;
+  if (state.numPlayers === 2) state.currentPlayer = 1 - state.currentPlayer;
+  renderPlayers();
+  nextRound();
+}
+
+function showStatus(text, kind) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = `status show ${kind}`;
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(() => el.classList.remove('show'), 1600);
+}
+
+function showWinner() {
+  audio.win();
+  const modal = document.getElementById('winnerModal');
+  const emoji = document.getElementById('winnerEmoji');
+  const title = document.getElementById('winnerTitle');
+  const sub = document.getElementById('winnerSubtitle');
+
+  if (state.numPlayers === 1) {
+    emoji.textContent = '🏆';
+    title.textContent = 'เก่งมาก!';
+    sub.textContent = `ได้ ${state.scores[0]} / ${state.totalRounds} คะแนน`;
+  } else {
+    const [s1, s2] = state.scores;
+    if (s1 > s2) {
+      emoji.textContent = PLAYER_AVATARS[0];
+      title.textContent = `${PLAYER_NAMES[0]} ชนะ!`;
+      sub.textContent = `${s1} คะแนน vs ${s2} คะแนน`;
+    } else if (s2 > s1) {
+      emoji.textContent = PLAYER_AVATARS[1];
+      title.textContent = `${PLAYER_NAMES[1]} ชนะ!`;
+      sub.textContent = `${s2} คะแนน vs ${s1} คะแนน`;
+    } else {
+      emoji.textContent = '🤝';
+      title.textContent = 'เสมอกัน!';
+      sub.textContent = `${s1} คะแนน เท่ากัน`;
+    }
+  }
+  modal.classList.add('show');
+  launchConfetti();
+}
+
+function closeWinner() {
+  document.getElementById('winnerModal').classList.remove('show');
+}
+
+function miniConfetti() {
+  const colors = ['#FF7E5F', '#4ECDC4', '#FF6B9D', '#6BCBFF', '#FFD93D'];
+  for (let i = 0; i < 18; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (40 + Math.random() * 20) + 'vw';
+    c.style.top = '30vh';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.6 + Math.random()) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2800);
+  }
+}
+
+function launchConfetti() {
+  const colors = ['#FF7E5F', '#4ECDC4', '#FF6B9D', '#6BCBFF', '#FFD93D'];
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+function openSettings() { document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+function applySettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  newGame();
+}
+
+document.querySelectorAll('.option-buttons').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group.id === 'opOptions') state.op = btn.dataset.value;
+    else if (group.id === 'levelOptions') state.level = btn.dataset.value;
+    else if (group.id === 'playerOptions') state.numPlayers = parseInt(btn.dataset.value);
+    else if (group.id === 'roundOptions') state.totalRounds = parseInt(btn.dataset.value);
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>
