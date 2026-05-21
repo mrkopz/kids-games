@@ -311,6 +311,24 @@ function buildDinoTasks() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// FEED GAME — เสียง feedback ตอนป้อนอาหารไดโน
+// ═══════════════════════════════════════════════════════════════════
+
+const FEED_PHRASES = {
+  yum:   'อร่อยมาก ขอบคุณนะ',
+  no:    'ไม่ใช่ตัวนี้นะ ลองอีกครั้ง',
+  done:  'เก่งมาก ป้อนครบทุกตัวแล้ว',
+};
+
+function buildFeedTasks() {
+  return Object.entries(FEED_PHRASES).map(([key, text]) => ({
+    out: path.join(repoRoot, 'audio/feed', `${key}.mp3`),
+    ssml: ssml(VOICES.alphabetTh, 'th-TH', text, -10),
+    label: `feed ${key} (${text})`,
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Run
 // ═══════════════════════════════════════════════════════════════════
 
@@ -320,6 +338,7 @@ async function main() {
   if (!ONLY || ONLY === 'words')    tasks.push(...await buildWordTasks());
   if (!ONLY || ONLY === 'math')     tasks.push(...buildMathTasks());
   if (!ONLY || ONLY === 'dinos')    tasks.push(...buildDinoTasks());
+  if (!ONLY || ONLY === 'feed')     tasks.push(...buildFeedTasks());
 
   console.log(`\nวางแผนสร้าง ${tasks.length} ไฟล์${ONLY ? ` (เฉพาะ ${ONLY})` : ''}\n`);
 
