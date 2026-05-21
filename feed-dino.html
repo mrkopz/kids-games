@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ป้อนอาหารไดโน">
+<title>ป้อนอาหารไดโน 🦖🥩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  /* โทนป่าก่อนประวัติศาสตร์ — ใช้ชุดเดียวกับเกมจับคู่ไดโน */
+  --bg-1: #E8DCC4;
+  --bg-2: #C7B98D;
+  --primary: #D2691E;
+  --primary-dark: #A0522D;
+  --accent: #4F7942;
+  --accent-dark: #355E3B;
+  --text: #3A2E2E;
+  --shadow: 0 8px 24px rgba(45, 30, 20, 0.18);
+  --shadow-lg: 0 16px 40px rgba(45, 30, 20, 0.25);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(210, 105, 30, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(79, 121, 66, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.progress {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 17px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-left  { display: flex; align-items: center; gap: 10px; }
+a.icon-btn { text-decoration: none; color: var(--text); }
+
+.icon-btn {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: none; background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted  { opacity: 0.5; }
+
+/* ─── พื้นที่เล่นหลัก ─── */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* โซนไดโน — ครึ่งบน — เป็น drop target */
+.dino-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 0;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.35);
+  transition: background 0.2s, transform 0.3s;
+  padding: 12px;
+  border: 3px dashed transparent;
+}
+.dino-zone.hover {
+  background: rgba(255,255,255,0.65);
+  border-color: var(--accent);
+}
+.dino-zone.happy { animation: happy 0.6s ease; }
+.dino-zone.sad   { animation: sad 0.6s ease; }
+@keyframes happy {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.06) translateY(-4px); }
+  60%      { transform: scale(1.06) translateY(-4px); }
+}
+@keyframes sad {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+.dino-img {
+  max-height: 70%;
+  max-width: 80%;
+  height: auto; width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(45,30,20,0.25));
+  pointer-events: none;
+}
+
+.dino-name {
+  margin-top: 4px;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+/* Hint bubble — โชว์ emoji ของอาหารที่ถูก ใน easy mode */
+.hint {
+  position: absolute;
+  top: 12px;
+  right: 14%;
+  background: white;
+  border-radius: 50% 50% 50% 6px;
+  width: 64px; height: 64px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  box-shadow: var(--shadow);
+  animation: floatUp 0.6s ease;
+}
+@keyframes floatUp { from { opacity: 0; transform: translateY(20px) scale(0.5); } to { opacity: 1; transform: none; } }
+.hint::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 4px;
+  width: 14px; height: 14px;
+  background: white;
+  border-radius: 0 50% 50% 50%;
+  transform: rotate(135deg);
+}
+
+/* ─── แถวอาหาร — ครึ่งล่าง ─── */
+.food-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+  padding: 16px 8px 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 110px;
+}
+
+.food {
+  width: 84px; height: 84px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 46px;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.25s, opacity 0.4s;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 1;
+}
+.food.dragging {
+  cursor: grabbing;
+  z-index: 100;
+  transition: none;
+  box-shadow: var(--shadow-lg);
+  filter: drop-shadow(0 8px 20px rgba(45,30,20,0.3));
+}
+.food.eaten {
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+}
+.food.shake { animation: foodShake 0.4s; }
+@keyframes foodShake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+
+@media (min-width: 768px) {
+  .food { width: 96px; height: 96px; font-size: 54px; }
+}
+
+.controls { display: flex; gap: 12px; margin-top: 14px; flex-shrink: 0; }
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+
+/* ─── Modal ─── */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(45, 30, 20, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal.show { opacity: 1; pointer-events: auto; }
+.modal-content {
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal.show .modal-content { transform: scale(1); }
+.modal-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  color: var(--text);
+  font-size: 22px; line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal h2 { font-size: 26px; margin-bottom: 8px; color: var(--primary); }
+.modal p { margin-bottom: 20px; opacity: 0.75; line-height: 1.5; }
+
+.option-group  { margin-bottom: 18px; text-align: left; }
+.option-label  { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.option-buttons{ display: flex; flex-wrap: wrap; gap: 8px; }
+.option-btn {
+  flex: 1 0 auto; white-space: nowrap;
+  min-width: 80px; padding: 12px;
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.option-btn.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+.winner-emoji { font-size: 72px; margin-bottom: 12px; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.confetti {
+  position: fixed;
+  width: 10px; height: 14px;
+  pointer-events: none;
+  z-index: 99;
+  animation: fall 3s linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <a class="icon-btn" href="index.html" aria-label="กลับไปหน้าเมนู">←</a>
+      <div class="logo">ป้อน<span>ไดโน</span></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="progress">🦖 <span id="progress">1/10</span></div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="dino-zone" id="dinoZone">
+      <img class="dino-img" id="dinoImg" src="images/dinos/trex.webp" alt="">
+      <div class="dino-name" id="dinoName">—</div>
+      <div class="hint" id="hint" style="display:none">🥩</div>
+    </div>
+    <div class="food-row" id="foodRow"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ ตั้งค่า</button>
+    <button class="btn btn-primary" onclick="newGame()">🔄 เกมใหม่</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()" aria-label="ปิด">×</button>
+    <h2>ตั้งค่าเกม</h2>
+    <p>ลากอาหารใส่ไดโนเสาร์ — ไดโนกินเนื้อ 🥩 หรือกินพืช 🌿?</p>
+
+    <div class="option-group">
+      <span class="option-label">ความยาก</span>
+      <div class="option-buttons" id="difficultyOptions">
+        <button class="option-btn selected" data-value="easy">ง่าย (มีคำใบ้)</button>
+        <button class="option-btn" data-value="hard">ยาก (ไม่มีคำใบ้)</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">จำนวนรอบ</span>
+      <div class="option-buttons" id="roundOptions">
+        <button class="option-btn" data-value="5">5 รอบ</button>
+        <button class="option-btn selected" data-value="10">10 รอบ</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="applySettings()" style="margin-top:12px;">เริ่มเกม</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content">
+    <div class="winner-emoji">🏆</div>
+    <h2 id="winnerTitle">เก่งมาก!</h2>
+    <p id="winnerSubtitle">—</p>
+    <button class="btn btn-primary" onclick="closeWinner(); newGame();">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script src="audio-player.js"></script>
+<script>
+// ─── ข้อมูลไดโน (แชร์กับ dino-memory.html — สั้นกว่า เพราะใช้แค่ภาพ ชื่อ และประเภทอาหาร) ───
+const DINOS = [
+  { key:'trex',    th:'ไทรันโนซอรัส',   diet:'meat'  },
+  { key:'tri',     th:'ไทรเซอราทอปส์',  diet:'plant' },
+  { key:'brachio', th:'บราคิโอซอรัส',   diet:'plant' },
+  { key:'stego',   th:'สเตโกซอรัส',     diet:'plant' },
+  { key:'velo',    th:'เวโลซิแรปเตอร์', diet:'meat'  },
+  { key:'ptero',   th:'เทอราโนดอน',     diet:'meat'  }, // กินปลา
+  { key:'spino',   th:'สไปโนซอรัส',     diet:'meat'  },
+  { key:'anky',    th:'แอนคิโลซอรัส',   diet:'plant' },
+  { key:'para',    th:'พาราซอโรโลฟัส',  diet:'plant' },
+  { key:'diplo',   th:'ดิปโพลโดคัส',    diet:'plant' },
+];
+
+const FOODS = {
+  meat: [
+    { emoji:'🥩', th:'เนื้อ' },
+    { emoji:'🍖', th:'เนื้อย่าง' },
+    { emoji:'🍗', th:'ขาไก่' },
+    { emoji:'🐟', th:'ปลา' },
+    { emoji:'🦴', th:'กระดูก' },
+    { emoji:'🥚', th:'ไข่' },
+  ],
+  plant: [
+    { emoji:'🌿', th:'ใบไม้' },
+    { emoji:'🍃', th:'ใบ' },
+    { emoji:'🌳', th:'ต้นไม้' },
+    { emoji:'🥬', th:'ผัก' },
+    { emoji:'🍎', th:'แอปเปิล' },
+    { emoji:'🌻', th:'ดอกไม้' },
+    { emoji:'🌱', th:'หน่อ' },
+    { emoji:'🌾', th:'หญ้า' },
+  ],
+};
+
+const HINT_EMOJI = { meat:'🥩', plant:'🌿' };
+
+// ─── State ───
+const state = {
+  difficulty:'easy', totalRounds:10, round:1, score:0,
+  currentDino:null, queue:[],
+  locked:false,
+};
+
+// ─── Audio (Web Audio beeps + AudioPlayer for voice) ───
+const audio = {
+  ctx:null, enabled:true,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  beep(freq, dur, type='sine', vol=0.15, delay=0) {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(g).connect(this.ctx.destination);
+    osc.start(t); osc.stop(t + dur);
+  },
+  good() { this.beep(523, 0.12, 'sine', 0.18, 0); this.beep(659, 0.12, 'sine', 0.18, 0.1); this.beep(784, 0.20, 'sine', 0.18, 0.2); },
+  bad()  { this.beep(220, 0.20, 'sine', 0.12); },
+  win()  { [523, 659, 784, 1047, 1319].forEach((f,i) => this.beep(f, 0.25, 'triangle', 0.2, i*0.12)); },
+};
+document.addEventListener('pointerdown', () => audio.init(), { once:false, capture:true });
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  if (typeof AudioPlayer !== 'undefined') AudioPlayer.setEnabled(audio.enabled);
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (audio.enabled) audio.init();
+}
+
+// ─── Utility ───
+function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
+function rand(min,max) { return Math.floor(Math.random() * (max-min+1)) + min; }
+
+// ─── เกมหลัก ───
+function newGame() {
+  state.round = 1;
+  state.score = 0;
+  state.queue = shuffle([...DINOS]).slice(0, state.totalRounds);
+  nextRound();
+}
+
+function nextRound() {
+  if (state.round > state.totalRounds) { showWinner(); return; }
+  state.locked = false;
+  document.getElementById('progress').textContent = `${state.round}/${state.totalRounds}`;
+  const dino = state.queue[state.round - 1];
+  state.currentDino = dino;
+  document.getElementById('dinoImg').src = `images/dinos/${dino.key}.webp`;
+  document.getElementById('dinoImg').alt = dino.th;
+  document.getElementById('dinoName').textContent = dino.th;
+  const hintEl = document.getElementById('hint');
+  if (state.difficulty === 'easy') {
+    hintEl.style.display = '';
+    hintEl.textContent = HINT_EMOJI[dino.diet];
+  } else {
+    hintEl.style.display = 'none';
+  }
+  // อ่านชื่อไดโน
+  if (typeof AudioPlayer !== 'undefined') {
+    AudioPlayer.playOrSpeak([`audio/dinos/voice/${dino.key}.mp3`], dino.th, 'th');
+  }
+  renderFoods();
+}
+
+function renderFoods() {
+  const dino = state.currentDino;
+  const correct = shuffle([...FOODS[dino.diet]]).slice(0, 2);
+  const otherType = dino.diet === 'meat' ? 'plant' : 'meat';
+  const wrong = shuffle([...FOODS[otherType]]).slice(0, 3);
+  const foods = shuffle([...correct, ...wrong]);
+
+  const row = document.getElementById('foodRow');
+  row.innerHTML = '';
+  foods.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'food';
+    el.textContent = f.emoji;
+    el.dataset.type = (correct.find(c => c.emoji === f.emoji) ? dino.diet : otherType);
+    el.dataset.name = f.th;
+    attachDrag(el);
+    row.appendChild(el);
+  });
+}
+
+// ─── Drag-drop ด้วย pointer events ───
+let dragState = null;
+
+function attachDrag(el) {
+  el.addEventListener('pointerdown', e => {
+    if (state.locked) return;
+    e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    dragState = {
+      el,
+      startX: e.clientX,
+      startY: e.clientY,
+      pointerId: e.pointerId,
+    };
+    el.classList.add('dragging');
+    try { el.setPointerCapture(e.pointerId); } catch {}
+  });
+  el.addEventListener('pointermove', e => {
+    if (!dragState || dragState.el !== el) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(1.15)`;
+    // highlight drop zone when hovering
+    const zone = document.getElementById('dinoZone');
+    const zr = zone.getBoundingClientRect();
+    const overZone = e.clientX > zr.left && e.clientX < zr.right && e.clientY > zr.top && e.clientY < zr.bottom;
+    zone.classList.toggle('hover', overZone);
+  });
+  const endDrag = e => {
+    if (!dragState || dragState.el !== el) return;
+    el.classList.remove('dragging');
+    try { el.releasePointerCapture(e.pointerId); } catch {}
+    const zone = document.getElementById('dinoZone');
+    zone.classList.remove('hover');
+    const zr = zone.getBoundingClientRect();
+    const over = e.clientX > zr.left && e.clientX < zr.right && e.clientY > zr.top && e.clientY < zr.bottom;
+    dragState = null;
+    if (over) {
+      handleDrop(el);
+    } else {
+      // snap กลับ
+      el.style.transform = '';
+    }
+  };
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+}
+
+function handleDrop(foodEl) {
+  if (state.locked) return;
+  const dino = state.currentDino;
+  const correct = foodEl.dataset.type === dino.diet;
+  const zone = document.getElementById('dinoZone');
+
+  if (correct) {
+    state.locked = true;
+    // กินอาหาร: หดและจางหายไปที่ตัวไดโน
+    const fr = foodEl.getBoundingClientRect();
+    const dr = document.getElementById('dinoImg').getBoundingClientRect();
+    const dx = dr.left + dr.width/2 - (fr.left + fr.width/2);
+    const dy = dr.top + dr.height/2 - (fr.top + fr.height/2);
+    foodEl.style.transition = 'transform 0.4s ease-in, opacity 0.4s';
+    foodEl.style.transform = `translate(${dx}px, ${dy}px) scale(0.3)`;
+    foodEl.style.opacity = '0';
+    audio.good();
+    zone.classList.add('happy');
+    setTimeout(() => zone.classList.remove('happy'), 600);
+    state.score++;
+    miniConfetti();
+    if (typeof AudioPlayer !== 'undefined') {
+      AudioPlayer.playOrSpeak(['audio/feed/yum.mp3'], 'อร่อยมาก ขอบคุณนะ', 'th');
+    }
+    setTimeout(() => {
+      state.round++;
+      nextRound();
+    }, 1400);
+  } else {
+    // ผิด: เด้งกลับ + เขย่า + เสียง "ไม่ใช่นะ"
+    foodEl.style.transition = 'transform 0.3s ease-out';
+    foodEl.style.transform = '';
+    setTimeout(() => { foodEl.style.transition = ''; foodEl.classList.add('shake'); }, 300);
+    setTimeout(() => foodEl.classList.remove('shake'), 800);
+    audio.bad();
+    zone.classList.add('sad');
+    setTimeout(() => zone.classList.remove('sad'), 600);
+    if (typeof AudioPlayer !== 'undefined') {
+      AudioPlayer.playOrSpeak(['audio/feed/no.mp3'], 'ไม่ใช่ตัวนี้นะ ลองอีกครั้ง', 'th');
+    }
+  }
+}
+
+// ─── Confetti + winner ───
+function miniConfetti() {
+  const colors = ['#D2691E', '#4F7942', '#C46A30', '#7AA5C8', '#FFD93D'];
+  for (let i = 0; i < 18; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (40 + Math.random()*20) + 'vw';
+    c.style.top = '30vh';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.4 + Math.random()) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2600);
+  }
+}
+
+function launchConfetti() {
+  const colors = ['#D2691E', '#4F7942', '#C46A30', '#7AA5C8', '#FFD93D'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDelay = Math.random()*0.5 + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+function showWinner() {
+  audio.win();
+  const sub = document.getElementById('winnerSubtitle');
+  document.getElementById('winnerTitle').textContent = 'เก่งมาก!';
+  sub.textContent = `ป้อนอาหารถูก ${state.score} / ${state.totalRounds} ตัว`;
+  document.getElementById('winnerModal').classList.add('show');
+  launchConfetti();
+  if (typeof AudioPlayer !== 'undefined') {
+    AudioPlayer.playOrSpeak(['audio/feed/done.mp3'], 'เก่งมาก ป้อนครบทุกตัวแล้ว', 'th');
+  }
+}
+
+function closeWinner() { document.getElementById('winnerModal').classList.remove('show'); }
+
+// ─── Settings ───
+function openSettings()  { document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+function applySettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  newGame();
+}
+
+document.querySelectorAll('.option-buttons').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group.id === 'difficultyOptions') state.difficulty = btn.dataset.value;
+    else if (group.id === 'roundOptions') state.totalRounds = parseInt(btn.dataset.value);
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>
