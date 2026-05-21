@@ -540,6 +540,7 @@ a.icon-btn { text-decoration: none; color: var(--text); }
 </div>
 
 <script src="categories.js"></script>
+<script src="audio-player.js"></script>
 <script>
 // ของในแต่ละการ์ดมาจากคลังคำแยกหมวดใน categories.js (เลือกหมวดในหน้าตั้งค่า)
 
@@ -645,6 +646,7 @@ const audio = {
 
 function toggleSound() {
   audio.enabled = !audio.enabled;
+  AudioPlayer.setEnabled(audio.enabled);
   const btn = document.getElementById('soundToggle');
   btn.textContent = audio.enabled ? '🔊' : '🔇';
   btn.classList.toggle('muted', !audio.enabled);
@@ -682,7 +684,7 @@ function newGame() {
   const pool = getCategoryPool(state.category);
   const chosen = [...pool].sort(() => Math.random() - 0.5).slice(0, pairs);
   state.cards = [...chosen, ...chosen]
-    .map((item, i) => ({ emoji: item.emoji, name: item.en, id: i }))
+    .map((item, i) => ({ emoji: item.emoji, name: item.en, category: item.category, slug: item.slug, id: i }))
     .sort(() => Math.random() - 0.5);
   state.flipped = [];
   state.matched = 0;
@@ -796,9 +798,12 @@ function flipCard(idx, el) {
 
   el.classList.add('flipped');
   audio.flip();
-  // พูดชื่อสัตว์ภาษาอังกฤษหลังเสียง click เล็กน้อย เพื่อไม่ให้ซ้อนกัน
-  const name = state.cards[idx].name;
-  if (name) setTimeout(() => audio.speak(name), 120);
+  // พูดชื่อภาษาอังกฤษ (เสียง Ana ที่ pre-render ไว้) — fallback Web TTS ถ้าไฟล์หาย
+  const card = state.cards[idx];
+  if (card.name) setTimeout(() => {
+    const url = `audio/words/en/${card.category}/${card.slug}.mp3`;
+    AudioPlayer.playOrSpeak([url], card.name, 'en');
+  }, 120);
   state.flipped.push({ idx, el });
 
   if (state.flipped.length === 2) {

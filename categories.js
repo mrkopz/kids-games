@@ -173,6 +173,18 @@ const CATEGORIES = {
 // ลำดับหมวดสำหรับปุ่มตั้งค่า
 const CATEGORY_KEYS = ['animals', 'fruits', 'colors', 'objects'];
 
+// ─── ติด category + slug ให้ทุก item อัตโนมัติ ───
+// ใช้สร้าง path ของไฟล์เสียง: audio/words/<lang>/<category>/<slug>.mp3
+function _slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+for (const k of CATEGORY_KEYS) {
+  for (const it of CATEGORIES[k].items) {
+    it.category = k;
+    it.slug = _slugify(it.en);
+  }
+}
+
 // คืน array ของ item ตามหมวดที่เลือก — 'all' = รวมทุกหมวด
 function getCategoryPool(key) {
   if (key === 'all') return CATEGORY_KEYS.flatMap(k => CATEGORIES[k].items);

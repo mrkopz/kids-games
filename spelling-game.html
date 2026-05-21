@@ -453,6 +453,7 @@ a.icon-btn { text-decoration: none; color: var(--text); }
 </div>
 
 <script src="categories.js"></script>
+<script src="audio-player.js"></script>
 <script>
 // คลังคำมาจาก categories.js แยกเป็นหมวด (เลือกหมวดในหน้าตั้งค่า)
 
@@ -558,11 +559,20 @@ if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechS
 
 function toggleSound() {
   audio.enabled = !audio.enabled;
+  AudioPlayer.setEnabled(audio.enabled);
   const btn = document.getElementById('soundToggle');
   btn.textContent = audio.enabled ? '🔊' : '🔇';
   btn.classList.toggle('muted', !audio.enabled);
   if (audio.enabled) audio.init();
   else if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+// พูดชื่อ animal ในภาษาที่เลือก — ใช้ MP3 (Achara TH / Ana EN) ก่อน, fallback Web TTS
+function sayAnimal() {
+  const a = state.animal;
+  if (!a || !a.category || !a.slug) return;
+  const url = `audio/words/${state.lang}/${a.category}/${a.slug}.mp3`;
+  AudioPlayer.playOrSpeak([url], a[state.lang], state.lang);
 }
 
 // iOS ต้องการให้ AudioContext เริ่มจาก user gesture
@@ -783,9 +793,7 @@ function pickChoice(isCorrect, btn, onReveal) {
     showStatus('ยังไม่ใช่ ลองดูเฉลยนะ', 'fail');
     // เผยคำตอบที่ถูกให้เห็น แล้วไปข้อต่อไป
     setTimeout(() => { onReveal(); }, 300);
-    setTimeout(() => {
-      audio.speak(state.animal[state.lang], state.lang);
-    }, 500);
+    setTimeout(sayAnimal, 500);
     setTimeout(() => { advance(); }, 2200);
   }
 }
@@ -799,7 +807,7 @@ function finishCorrect() {
   [...document.getElementById('slots').children].forEach(s => s.classList.add('correct'));
   const name = state.animal[state.lang];
   showStatus(`ถูกต้อง! ${name} 🎉`, 'success');
-  setTimeout(() => audio.speak(name, state.lang), 250);
+  setTimeout(sayAnimal, 250);
   miniConfetti();
   setTimeout(() => { advance(); }, 2000);
 }
