@@ -57,9 +57,9 @@ const ENDPOINT = `https://${REGION}.tts.speech.microsoft.com/cognitiveservices/v
 const VOICES = {
   alphabetTh:  'th-TH-PremwadeeNeural',  // learn-abc.html ก-ฮ
   alphabetEn:  'en-US-JennyNeural',      // learn-abc.html A-Z
-  wordsTh:     'th-TH-AcharaNeural',     // memory + spelling (ไทย)
+  wordsTh:     'th-TH-PremwadeeNeural',  // memory + spelling (ไทย) — เปลี่ยนจาก Achara
   wordsEn:     'en-US-AnaNeural',        // memory + spelling (อังกฤษ - เสียงเด็ก)
-  mathTh:      'th-TH-AcharaNeural',     // math-game (ไทย)
+  mathTh:      'th-TH-PremwadeeNeural',  // math-game (ไทย) — เปลี่ยนจาก Achara
   mathEn:      'en-US-AriaNeural',       // math-game (อังกฤษ)
 };
 
@@ -159,7 +159,7 @@ async function buildWordTasks() {
     for (const it of CATEGORIES[k].items) {
       tasks.push({
         out: path.join(repoRoot, 'audio/words/th', it.category, `${it.slug}.mp3`),
-        ssml: ssml(VOICES.wordsTh, 'th-TH', it.th, -10),
+        ssml: ssml(VOICES.wordsTh, 'th-TH', it.th, 0),  // rate ปกติ - ฟังธรรมชาติสุดสำหรับคำเดี่ยว
         label: `word TH ${it.category}/${it.slug} (${it.th})`,
       });
       tasks.push({
@@ -231,7 +231,7 @@ function buildMathTasks() {
   for (const n of numbersToBuild) {
     tasks.push({
       out: path.join(repoRoot, 'audio/math/th/n', `${n}.mp3`),
-      ssml: ssml(VOICES.mathTh, 'th-TH', thaiSay(n), -10),
+      ssml: ssml(VOICES.mathTh, 'th-TH', thaiSay(n), 0),
       label: `math TH n/${n} (${thaiSay(n)})`,
     });
     tasks.push({
@@ -243,7 +243,7 @@ function buildMathTasks() {
   // เอ็ด สำหรับ 101, 201, ..., 1001, 9901 (TH เท่านั้น — EN ใช้ 'one' ปกติได้)
   tasks.push({
     out: path.join(repoRoot, 'audio/math/th/n', `et.mp3`),
-    ssml: ssml(VOICES.mathTh, 'th-TH', 'เอ็ด', -10),
+    ssml: ssml(VOICES.mathTh, 'th-TH', 'เอ็ด', 0),
     label: `math TH n/et (เอ็ด)`,
   });
 
@@ -253,7 +253,7 @@ function buildMathTasks() {
   for (const [k, v] of Object.entries(TH_OPS)) {
     tasks.push({
       out: path.join(repoRoot, 'audio/math/th/op', `${k}.mp3`),
-      ssml: ssml(VOICES.mathTh, 'th-TH', v, -10),
+      ssml: ssml(VOICES.mathTh, 'th-TH', v, 0),
       label: `math TH op/${k}`,
     });
   }
@@ -271,7 +271,7 @@ function buildMathTasks() {
   for (const [k, v] of Object.entries(TH_FB)) {
     tasks.push({
       out: path.join(repoRoot, 'audio/math/th/fb', `${k}.mp3`),
-      ssml: ssml(VOICES.mathTh, 'th-TH', v, -10),
+      ssml: ssml(VOICES.mathTh, 'th-TH', v, 0),
       label: `math TH fb/${k}`,
     });
   }
