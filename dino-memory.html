@@ -573,7 +573,19 @@ const audio = {
   fail()  { this.beep(220, 0.20, 'sine', 0.12); },
   win()   { [523, 659, 784, 1047, 1319].forEach((f, i) => this.beep(f, 0.25, 'triangle', 0.2, i * 0.12)); },
 
-  // ─── Roar synth: low-freq sweep + filtered noise ───
+  // ─── Roar: เล่นไฟล์ MP3/OGG (CC0 จาก OpenGameArt) — fallback synth ถ้าไฟล์โหลดไม่ขึ้น ───
+  _roarAudio: null,
+  roarFile(url, fallbackSynth) {
+    if (!this.enabled) return;
+    if (this._roarAudio) { try { this._roarAudio.pause(); } catch {} this._roarAudio = null; }
+    const a = new Audio(url);
+    a.volume = 0.55;
+    this._roarAudio = a;
+    a.addEventListener('error', () => { if (fallbackSynth) this.roar(fallbackSynth); }, { once: true });
+    a.play().catch(() => { if (fallbackSynth) this.roar(fallbackSynth); });
+  },
+
+  // ─── Roar synth: low-freq sweep + filtered noise (fallback) ───
   roar(params) {
     if (!this.enabled || !this.ctx) return;
     const c = this.ctx;
@@ -768,7 +780,8 @@ function flipCard(idx, el) {
         b.el.classList.add('matched');
         const dino = state.cards[a.idx];
         audio.match();
-        audio.roar(dino.roar);
+        // เล่นเสียงคำรามจริง (CC0) — fallback ไป synth ถ้าไฟล์โหลดไม่ขึ้น
+        audio.roarFile(`audio/dinos/${dino.key}.ogg`, dino.roar);
         state.scores[state.currentPlayer]++;
         state.matched++;
         renderPlayers();
