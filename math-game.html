@@ -706,12 +706,13 @@ function pickChoice(val, btn) {
     const fallback = state.lang === 'en'
       ? `${state.problem.ans}. Correct.`
       : `${state.problem.ans} ถูกค่ะ`;
-    AudioPlayer.playSequence(urls).then(ok => {
-      if (ok) setTimeout(go, 400);
-      else {
+    AudioPlayer.playSequence(urls).then(r => {
+      if (r === 'ok') setTimeout(go, 400);
+      else if (r === 'error') {
         const spoke = audio.speak(fallback, state.lang, () => setTimeout(go, 400));
         if (!spoke) setTimeout(go, 1000);
       }
+      // 'cancelled' → ไม่ทำอะไร (มี playback ใหม่แทรกเข้ามาแล้ว)
     });
     setTimeout(go, estimateMs(urls) + 1500); // safety
     return;
@@ -742,9 +743,9 @@ function pickChoice(val, btn) {
     const fallback = state.lang === 'en'
       ? `The answer is ${state.problem.ans}.`
       : `ผิดค่ะ คำตอบคือ ${state.problem.ans}`;
-    AudioPlayer.playSequence(urls).then(ok => {
-      if (ok) setTimeout(go, 500);
-      else {
+    AudioPlayer.playSequence(urls).then(r => {
+      if (r === 'ok') setTimeout(go, 500);
+      else if (r === 'error') {
         const spoke = audio.speak(fallback, state.lang, () => setTimeout(go, 500));
         if (!spoke) setTimeout(go, 1800);
       }

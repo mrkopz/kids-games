@@ -6,10 +6,14 @@
 //
 window.AudioPlayer = (function () {
   let enabled = true;
-  let token = 0; // ใช้ยกเลิก sequence ที่กำลังเล่นค้าง
+  let token = 0;
+  // pending = ฟังก์ชัน cancel ของ playOne ที่ยังค้างอยู่ — stop() จะเรียกเพื่อหยุดเล่นจริง ๆ
+  const pending = new Set();
 
   function stop() {
     token++;
+    for (const cancel of pending) { try { cancel(); } catch {} }
+    pending.clear();
     if (typeof speechSynthesis !== 'undefined') {
       try { speechSynthesis.cancel(); } catch {}
     }
@@ -20,27 +24,34 @@ window.AudioPlayer = (function () {
     if (!v) stop();
   }
 
-  // เล่นไฟล์เดียว คืน Promise<boolean> (true = เล่นจนจบและไม่ถูกยกเลิก)
+  // ผลของ playOne / playSequence: 'ok' = เล่นจบ, 'error' = ไฟล์มีปัญหา, 'cancelled' = โดน stop() แทรก
   function playOne(url, myToken) {
     return new Promise(resolve => {
-      if (myToken !== token) return resolve(false);
+      if (myToken !== token) return resolve('cancelled');
       const a = new Audio(url);
-      a.onended = () => resolve(myToken === token);
-      a.onerror = () => resolve(false);
-      a.play().catch(() => resolve(false));
+      const cancel = () => { try { a.pause(); a.src = ''; } catch {} ; resolve('cancelled'); };
+      pending.add(cancel);
+      const done = (kind) => {
+        pending.delete(cancel);
+        resolve(myToken !== token ? 'cancelled' : kind);
+      };
+      a.onended = () => done('ok');
+      a.onerror = () => done('error');
+      a.play().catch(() => done('error'));
     });
   }
 
-  // เล่น URL ต่อกัน — คืน Promise<boolean> = true ถ้าเล่นครบและไม่ถูกยกเลิก
+  // เล่น URL ต่อกัน คืน Promise<'ok'|'error'|'cancelled'>
   async function playSequence(urls) {
-    if (!enabled) return false;
+    if (!enabled) return 'cancelled';
     stop();
     const myToken = token;
     for (const url of urls) {
-      const ok = await playOne(url, myToken);
-      if (!ok) return false;
+      if (myToken !== token) return 'cancelled';
+      const r = await playOne(url, myToken);
+      if (r !== 'ok') return r;
     }
-    return true;
+    return 'ok';
   }
 
   // Web Speech fallback (รุ่นเสริม — ใช้ตอน MP3 หาย/ไม่มี)
@@ -70,11 +81,12 @@ window.AudioPlayer = (function () {
   }
   if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 
-  // เล่นไฟล์ก่อน — ถ้าพังตกไป Web TTS
+  // เล่นไฟล์ก่อน — ถ้าไฟล์พัง ('error') ค่อยตกไป Web TTS
+  // กรณี 'cancelled' (โดน playback ใหม่แทรก) จะไม่ fallback เพื่อไม่ให้เสียงซ้อนกัน
   async function playOrSpeak(urls, fallbackText, lang) {
     if (!enabled) return;
-    const ok = await playSequence(urls);
-    if (!ok && fallbackText) speak(fallbackText, lang);
+    const r = await playSequence(urls);
+    if (r === 'error' && fallbackText) speak(fallbackText, lang);
   }
 
   // ─── Number decomposition (math game) ───────────────────────────
