@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เกมจับคู่ไดโนเสาร์">
+<title>เกมจับคู่ไดโนเสาร์ 🦖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Mali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+
+:root {
+  /* โทนป่าก่อนประวัติศาสตร์ — เขียวเข้ม + ส้มภูเขาไฟ */
+  --bg-1: #E8DCC4;
+  --bg-2: #C7B98D;
+  --primary: #D2691E;        /* ส้มภูเขาไฟ */
+  --primary-dark: #A0522D;
+  --accent: #4F7942;         /* เขียวป่า */
+  --accent-dark: #355E3B;
+  --player1: #C46A30;
+  --player2: #4F7942;
+  --text: #3A2E2E;
+  --card-back-1: #6B4226;    /* น้ำตาลฟอสซิล */
+  --card-back-2: #4A2C18;
+  --shadow: 0 8px 24px rgba(45, 30, 20, 0.18);
+  --shadow-lg: 0 16px 40px rgba(45, 30, 20, 0.25);
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Mali', 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(210, 105, 30, 0.10) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(79, 121, 66, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+
+.timer {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+a.icon-btn { text-decoration: none; color: var(--text); }
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.muted { opacity: 0.5; }
+
+.players { display: flex; gap: 12px; margin-bottom: 14px; flex-shrink: 0; }
+.player {
+  flex: 1;
+  background: white;
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s;
+  border: 3px solid transparent;
+}
+.player.active { transform: translateY(-4px); border-color: currentColor; box-shadow: var(--shadow-lg); }
+.player.p1 { color: var(--player1); }
+.player.p2 { color: var(--player2); }
+.player-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.player-info { flex: 1; min-width: 0; }
+.player-name { font-size: 14px; font-weight: 500; color: var(--text); opacity: 0.7; }
+.player-score { font-size: 22px; font-weight: 700; color: currentColor; line-height: 1.1; }
+.player-time { font-size: 14px; font-weight: 600; color: currentColor; opacity: 0.85; font-family: 'Fredoka', sans-serif; }
+.player-time.urgent { animation: pulse 0.6s infinite alternate; }
+@keyframes pulse { to { opacity: 0.5; } }
+
+/* ─── กระดาน ─── */
+.board {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), 1fr);
+  gap: 10px;
+  padding: 4px;
+  min-height: 0;
+  align-content: center;
+}
+
+.card {
+  aspect-ratio: 3 / 4;
+  perspective: 1000px;
+  cursor: pointer;
+  position: relative;
+}
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card.flipped .card-inner,
+.card.matched .card-inner {
+  transform: rotateY(180deg);
+}
+.card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow);
+}
+.card-back {
+  background: linear-gradient(135deg, var(--card-back-1), var(--card-back-2));
+  color: white;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 700;
+  font-family: 'Fredoka', sans-serif;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+.card-back::after {
+  content: '🦴';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2rem, 7vw, 3rem);
+  opacity: 0.3;
+}
+.card-front {
+  background: white;
+  transform: rotateY(180deg);
+  padding: 6px;
+  flex-direction: column;
+  gap: 2px;
+}
+.card.matched .card-front {
+  background: linear-gradient(135deg, #B4F8C8, #4F7942);
+  color: white;
+  animation: matchPop 0.6s ease;
+}
+@keyframes matchPop {
+  0%, 100% { transform: rotateY(180deg) scale(1); }
+  40%      { transform: rotateY(180deg) scale(1.08); }
+}
+.card-front svg {
+  width: 100%;
+  height: 75%;
+  max-height: 75%;
+}
+.card-front .card-name {
+  font-size: clamp(0.7rem, 2.2vw, 1rem);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1;
+}
+.card.matched .card-front .card-name { color: white; }
+
+/* ─── ปุ่มและคอนโทรล ─── */
+.controls { display: flex; gap: 12px; margin-top: 14px; flex-shrink: 0; }
+.btn {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:active { transform: scale(0.96); }
+.btn-secondary { background: white; color: var(--text); }
+
+/* ─── Modal ─── */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 30, 20, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal.show { opacity: 1; pointer-events: auto; }
+.modal-content {
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+.modal.show .modal-content { transform: scale(1); }
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal h2 { font-size: 26px; margin-bottom: 8px; color: var(--primary); }
+.modal p { margin-bottom: 20px; opacity: 0.75; line-height: 1.5; }
+
+.option-group { margin-bottom: 18px; text-align: left; }
+.option-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.option-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.option-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  min-width: 80px;
+  padding: 12px;
+  border: 2px solid #eee;
+  background: white;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+.option-btn.selected { border-color: var(--primary); background: var(--primary); color: white; }
+
+/* ─── Fact card (โชว์ตอนจับคู่ได้) ─── */
+.fact-svg {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 10px;
+}
+.fact-name-th { font-size: 22px; font-weight: 700; color: var(--primary); }
+.fact-name-en { font-size: 16px; opacity: 0.7; margin-bottom: 12px; font-family: 'Fredoka', sans-serif; }
+.fact-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--accent);
+  color: white;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.fact-text { font-size: 15px; line-height: 1.6; }
+
+.winner-emoji { font-size: 72px; margin-bottom: 12px; animation: bounce 0.8s ease infinite alternate; }
+@keyframes bounce { to { transform: translateY(-10px); } }
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 99;
+  animation: fall 3s linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+@media (min-width: 768px) {
+  .logo { font-size: 30px; }
+  .timer { font-size: 20px; }
+  .player-score { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <a class="icon-btn" href="index.html" aria-label="กลับไปหน้าเมนู">←</a>
+      <div class="logo">เกม<span>ไดโนเสาร์</span></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="soundToggle" onclick="toggleSound()" aria-label="เปิด/ปิดเสียง">🔊</button>
+      <div class="timer">⏱ <span id="timer">00:00</span></div>
+    </div>
+  </header>
+
+  <div class="players" id="players"></div>
+  <div class="board" id="board"></div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="openSettings()">⚙️ ตั้งค่า</button>
+    <button class="btn btn-primary" onclick="newGame()">🔄 เกมใหม่</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()" aria-label="ปิด">×</button>
+    <h2>ตั้งค่าเกม</h2>
+    <p>เลือกความยากและจำนวนผู้เล่น</p>
+
+    <div class="option-group">
+      <span class="option-label">ผู้เล่น</span>
+      <div class="option-buttons" id="playerOptions">
+        <button class="option-btn" data-value="1">คนเดียว</button>
+        <button class="option-btn selected" data-value="2">สองคน</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">ความยาก (จำนวนการ์ด)</span>
+      <div class="option-buttons" id="difficultyOptions">
+        <button class="option-btn selected" data-value="easy">ง่าย (12 ใบ)</button>
+        <button class="option-btn" data-value="medium">กลาง (16 ใบ)</button>
+        <button class="option-btn" data-value="hard">ยาก (20 ใบ)</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <span class="option-label">เวลาต่อรอบ (โหมด 2 คน)</span>
+      <div class="option-buttons" id="timeOptions">
+        <button class="option-btn" data-value="0">ไม่จำกัด</button>
+        <button class="option-btn" data-value="15">15s</button>
+        <button class="option-btn selected" data-value="30">30s</button>
+        <button class="option-btn" data-value="45">45s</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="applySettings()" style="margin-top: 12px;">เริ่มเกม</button>
+  </div>
+</div>
+
+<div class="modal" id="factModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeFactModal()" aria-label="ปิด">×</button>
+    <div class="fact-svg" id="factSvg"></div>
+    <div class="fact-name-th" id="factNameTh">—</div>
+    <div class="fact-name-en" id="factNameEn">—</div>
+    <span class="fact-tag" id="factTag">—</span>
+    <div class="fact-text" id="factText">—</div>
+    <button class="btn btn-primary" onclick="closeFactModal()" style="margin-top: 16px;">เล่นต่อ</button>
+  </div>
+</div>
+
+<div class="modal" id="winnerModal">
+  <div class="modal-content">
+    <div class="winner-emoji" id="winnerEmoji">🏆</div>
+    <h2 id="winnerTitle">เก่งมาก!</h2>
+    <p id="winnerSubtitle">เล่นได้ดีมากเลย</p>
+    <button class="btn btn-primary" onclick="closeWinner(); newGame();">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script src="audio-player.js"></script>
+<script>
+// ─── ข้อมูลไดโนเสาร์ 10 species ───
+// roar params: f0=ความถี่เริ่ม, f1=ความถี่ระหว่างทาง, f2=ความถี่จบ, dur=ระยะเวลา (วินาที), type=waveform, noise=0..1
+const DINOS = [
+  {
+    key:'trex', th:'ไทรันโนซอรัส', en:'T-Rex',
+    color:'#6B8E3A', tag:'นักล่า',
+    fact:'T-Rex ตัวยาวถึง 12 เมตร ฟันยาว 20 เซ็นต์ กัดได้แรงที่สุดในบรรดาสัตว์บก',
+    roar:{type:'sawtooth', f0:90, f1:55, f2:45, dur:1.4, noise:0.45},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Tail -->
+      <path d="M 8,55 Q 0,40 14,48 L 22,55 Z"/>
+      <!-- Body -->
+      <ellipse cx="42" cy="52" rx="28" ry="14"/>
+      <!-- Neck + Head -->
+      <path d="M 62,42 Q 70,28 88,30 L 92,42 L 78,46 L 66,48 Z"/>
+      <!-- Mouth -->
+      <path d="M 76,38 L 92,36 L 92,40 L 78,42 Z" fill="#fff" stroke="currentColor" stroke-width="0.8"/>
+      <!-- Teeth -->
+      <path d="M 80,40 L 82,43 L 84,40 L 86,43 L 88,40" stroke="currentColor" stroke-width="1" fill="none"/>
+      <!-- Eye -->
+      <circle cx="82" cy="33" r="1.6" fill="#000"/>
+      <!-- Tiny arms -->
+      <line x1="56" y1="50" x2="54" y2="56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="60" y1="50" x2="58" y2="56" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Legs -->
+      <path d="M 32,64 L 30,76 L 38,76 L 38,64 Z"/>
+      <path d="M 48,64 L 46,76 L 54,76 L 54,64 Z"/>
+      <!-- Feet -->
+      <ellipse cx="34" cy="76" rx="6" ry="2"/>
+      <ellipse cx="50" cy="76" rx="6" ry="2"/>
+    </svg>`
+  },
+  {
+    key:'tri', th:'ไทรเซอราทอปส์', en:'Triceratops',
+    color:'#A87856', tag:'กินพืช',
+    fact:'มี 3 เขา และแผ่นกระดูกใหญ่ที่คอเอาไว้ป้องกันตัว ตัวหนัก 6 ตัน เท่ารถบรรทุก',
+    roar:{type:'sawtooth', f0:110, f1:90, f2:75, dur:1.0, noise:0.4},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Frill -->
+      <path d="M 56,18 Q 80,20 80,55 Q 76,58 56,55 Z"/>
+      <!-- Body -->
+      <ellipse cx="46" cy="55" rx="28" ry="13"/>
+      <!-- Head -->
+      <path d="M 62,52 Q 88,52 90,62 L 78,68 L 64,64 Z"/>
+      <!-- Horns -->
+      <path d="M 70,52 L 68,38 L 72,38 Z"/>
+      <path d="M 80,52 L 78,38 L 82,38 Z"/>
+      <path d="M 88,62 L 96,58 L 90,66 Z"/>
+      <!-- Eye -->
+      <circle cx="78" cy="58" r="1.4" fill="#000"/>
+      <!-- Legs -->
+      <rect x="26" y="64" width="6" height="14"/>
+      <rect x="38" y="64" width="6" height="14"/>
+      <rect x="52" y="64" width="6" height="14"/>
+      <rect x="62" y="64" width="6" height="14"/>
+      <!-- Tail -->
+      <path d="M 18,58 Q 8,52 14,62 Z"/>
+    </svg>`
+  },
+  {
+    key:'brachio', th:'บราคิโอซอรัส', en:'Brachiosaurus',
+    color:'#5A8AA5', tag:'กินพืช',
+    fact:'คอยาวเกือบ 10 เมตร สูงเท่าตึก 4 ชั้น ใช้คอเอื้อมกินใบไม้ยอดสูง',
+    roar:{type:'sawtooth', f0:55, f1:42, f2:35, dur:1.8, noise:0.3},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Long neck -->
+      <path d="M 50,55 Q 58,30 72,12 L 78,14 Q 68,30 60,55 Z"/>
+      <!-- Head -->
+      <ellipse cx="76" cy="12" rx="8" ry="5"/>
+      <circle cx="80" cy="11" r="1.3" fill="#000"/>
+      <!-- Body -->
+      <ellipse cx="40" cy="58" rx="26" ry="12"/>
+      <!-- Tail -->
+      <path d="M 16,58 Q 0,55 8,65 Q 14,62 18,62 Z"/>
+      <!-- Legs -->
+      <rect x="22" y="66" width="7" height="12"/>
+      <rect x="35" y="66" width="7" height="12"/>
+      <rect x="48" y="66" width="7" height="12"/>
+      <rect x="56" y="66" width="6" height="12"/>
+    </svg>`
+  },
+  {
+    key:'stego', th:'สเตโกซอรัส', en:'Stegosaurus',
+    color:'#7A8C5E', tag:'กินพืช',
+    fact:'มีแผ่นกระดูกบนหลังเป็นแนวซิกแซก และมีหนามแหลม 4 อันที่หาง',
+    roar:{type:'sawtooth', f0:95, f1:75, f2:65, dur:1.1, noise:0.35},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Plates -->
+      <path d="M 28,42 L 32,28 L 36,42 Z"/>
+      <path d="M 38,38 L 44,22 L 50,38 Z"/>
+      <path d="M 52,38 L 58,22 L 64,38 Z"/>
+      <path d="M 66,42 L 70,30 L 74,42 Z"/>
+      <!-- Body -->
+      <ellipse cx="50" cy="56" rx="30" ry="12"/>
+      <!-- Head -->
+      <ellipse cx="78" cy="58" rx="8" ry="5"/>
+      <circle cx="82" cy="56" r="1.2" fill="#000"/>
+      <!-- Tail with spikes -->
+      <path d="M 22,55 Q 8,52 6,60 Q 12,58 18,60 Z"/>
+      <path d="M 4,52 L 0,46 L 6,52 Z"/>
+      <path d="M 8,48 L 4,42 L 10,48 Z"/>
+      <!-- Legs -->
+      <rect x="32" y="64" width="6" height="14"/>
+      <rect x="44" y="64" width="6" height="14"/>
+      <rect x="58" y="64" width="6" height="14"/>
+      <rect x="68" y="64" width="6" height="14"/>
+    </svg>`
+  },
+  {
+    key:'velo', th:'เวโลซิแรปเตอร์', en:'Velociraptor',
+    color:'#C46A30', tag:'นักล่า',
+    fact:'ตัวเล็กแต่ฉลาดและรวดเร็ว ล่าเป็นฝูง มีกรงเล็บโค้งแหลมที่นิ้วเท้าไว้แทง',
+    roar:{type:'square', f0:320, f1:400, f2:240, dur:0.6, noise:0.55},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Tail -->
+      <path d="M 12,42 L 4,38 Q 0,44 8,46 L 18,46 Z"/>
+      <!-- Body -->
+      <ellipse cx="40" cy="48" rx="22" ry="10"/>
+      <!-- Head -->
+      <path d="M 58,42 Q 78,38 86,46 L 78,52 L 62,52 Z"/>
+      <!-- Mouth/teeth -->
+      <path d="M 70,46 L 86,46 L 84,49 L 70,49 Z" fill="#fff" stroke="currentColor" stroke-width="0.5"/>
+      <line x1="74" y1="46" x2="74" y2="49" stroke="currentColor" stroke-width="0.7"/>
+      <line x1="79" y1="46" x2="79" y2="49" stroke="currentColor" stroke-width="0.7"/>
+      <!-- Eye -->
+      <circle cx="78" cy="43" r="1.3" fill="#000"/>
+      <!-- Front arm/claw -->
+      <path d="M 54,52 L 50,60 L 46,58 L 50,56 Z"/>
+      <!-- Legs (raised, runner pose) -->
+      <path d="M 36,58 L 32,72 L 38,72 L 40,60 Z"/>
+      <path d="M 48,58 L 52,72 L 58,70 L 52,60 Z"/>
+      <!-- Sickle claw -->
+      <path d="M 32,72 Q 28,76 32,78 L 36,74 Z" fill="#fff" stroke="currentColor" stroke-width="0.6"/>
+    </svg>`
+  },
+  {
+    key:'ptero', th:'เทอราโนดอน', en:'Pteranodon',
+    color:'#7A4A8C', tag:'บินได้',
+    fact:'ไม่ใช่ไดโนเสาร์จริง แต่บินได้ ปีกกว้างถึง 7 เมตร กินปลาเป็นอาหาร',
+    roar:{type:'sine', f0:680, f1:880, f2:480, dur:0.7, noise:0.5},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Left wing -->
+      <path d="M 50,40 L 6,30 L 14,40 L 50,46 Z"/>
+      <!-- Right wing -->
+      <path d="M 50,40 L 94,30 L 86,40 L 50,46 Z"/>
+      <!-- Body -->
+      <ellipse cx="50" cy="48" rx="8" ry="12"/>
+      <!-- Head + beak -->
+      <path d="M 50,38 L 44,30 L 56,30 Z"/>
+      <!-- Crest -->
+      <path d="M 50,30 L 64,22 L 56,30 Z"/>
+      <!-- Eye -->
+      <circle cx="52" cy="34" r="1.2" fill="#000"/>
+      <!-- Legs -->
+      <line x1="46" y1="58" x2="44" y2="68" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="54" y1="58" x2="56" y2="68" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    key:'spino', th:'สไปโนซอรัส', en:'Spinosaurus',
+    color:'#3A7A8A', tag:'นักล่า',
+    fact:'ใหญ่กว่า T-Rex มีใบเรือยาวบนหลัง ว่ายน้ำเก่ง กินปลายักษ์เป็นอาหาร',
+    roar:{type:'sawtooth', f0:80, f1:60, f2:50, dur:1.5, noise:0.55},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Sail -->
+      <path d="M 24,48 Q 30,16 50,12 Q 70,16 76,48 Q 66,42 56,40 Q 42,40 32,42 Z"/>
+      <!-- Body -->
+      <ellipse cx="48" cy="52" rx="28" ry="10"/>
+      <!-- Tail -->
+      <path d="M 20,54 L 4,52 Q 0,58 8,58 L 22,58 Z"/>
+      <!-- Head (crocodile-like, long snout) -->
+      <path d="M 70,46 L 96,48 L 96,54 L 70,56 Z"/>
+      <line x1="78" y1="52" x2="94" y2="52" stroke="#fff" stroke-width="0.6"/>
+      <!-- Teeth -->
+      <path d="M 78,50 L 80,52 L 82,50 L 84,52 L 86,50 L 88,52 L 90,50" stroke="currentColor" stroke-width="0.7" fill="none"/>
+      <!-- Eye -->
+      <circle cx="76" cy="48" r="1.2" fill="#000"/>
+      <!-- Legs -->
+      <rect x="34" y="60" width="6" height="14"/>
+      <rect x="50" y="60" width="6" height="14"/>
+    </svg>`
+  },
+  {
+    key:'anky', th:'แอนคิโลซอรัส', en:'Ankylosaurus',
+    color:'#7C6E50', tag:'กินพืช',
+    fact:'มีเกราะแข็งคลุมตัว และหางสุดเป็นกระบองแกว่งฟาดศัตรูได้',
+    roar:{type:'sawtooth', f0:115, f1:90, f2:75, dur:1.0, noise:0.5},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Body (low and wide) -->
+      <ellipse cx="50" cy="58" rx="32" ry="10"/>
+      <!-- Armor spikes on top -->
+      <path d="M 30,50 L 32,46 L 34,50 Z"/>
+      <path d="M 40,48 L 42,44 L 44,48 Z"/>
+      <path d="M 50,48 L 52,44 L 54,48 Z"/>
+      <path d="M 60,48 L 62,44 L 64,48 Z"/>
+      <path d="M 70,50 L 72,46 L 74,50 Z"/>
+      <!-- Head -->
+      <ellipse cx="80" cy="58" rx="8" ry="6"/>
+      <circle cx="84" cy="56" r="1.3" fill="#000"/>
+      <!-- Tail club -->
+      <path d="M 18,58 L 8,55 L 8,61 Z"/>
+      <ellipse cx="6" cy="58" rx="6" ry="5"/>
+      <!-- Legs -->
+      <rect x="30" y="64" width="6" height="12"/>
+      <rect x="42" y="64" width="6" height="12"/>
+      <rect x="56" y="64" width="6" height="12"/>
+      <rect x="68" y="64" width="6" height="12"/>
+    </svg>`
+  },
+  {
+    key:'para', th:'พาราซอโรโลฟัส', en:'Parasaurolophus',
+    color:'#D4A040', tag:'กินพืช',
+    fact:'มีหงอนยาวบนหัวเป็นท่อกลวง เป่าออกมาเป็นเสียงทรัมเป็ตคุยกับฝูง',
+    roar:{type:'sine', f0:240, f1:340, f2:280, dur:1.3, noise:0.1},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Tail -->
+      <path d="M 14,52 Q 4,42 12,58 Z"/>
+      <!-- Body -->
+      <ellipse cx="46" cy="54" rx="28" ry="11"/>
+      <!-- Head -->
+      <path d="M 64,46 Q 76,46 78,54 L 70,58 L 62,56 Z"/>
+      <!-- Long curved crest -->
+      <path d="M 70,46 Q 80,30 92,20 L 86,18 Q 76,32 66,46 Z"/>
+      <!-- Eye -->
+      <circle cx="72" cy="50" r="1.3" fill="#000"/>
+      <!-- Mouth -->
+      <path d="M 70,54 L 78,54 L 78,57 L 70,56 Z" fill="#fff" stroke="currentColor" stroke-width="0.5"/>
+      <!-- Legs (4 — quadrupedal stance) -->
+      <rect x="32" y="62" width="6" height="14"/>
+      <rect x="44" y="62" width="6" height="14"/>
+      <rect x="54" y="62" width="6" height="14"/>
+    </svg>`
+  },
+  {
+    key:'diplo', th:'ดิปโพลโดคัส', en:'Diplodocus',
+    color:'#7AA5C8', tag:'กินพืช',
+    fact:'ยาวที่สุดในไดโนเสาร์ ตัวยาว 27 เมตร ใช้หางยาวเป็นแส้ฟาดศัตรู',
+    roar:{type:'sawtooth', f0:48, f1:38, f2:32, dur:2.0, noise:0.3},
+    svg:`<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <!-- Very long horizontal neck -->
+      <path d="M 50,48 L 90,28 L 92,32 L 52,52 Z"/>
+      <!-- Head -->
+      <ellipse cx="91" cy="30" rx="6" ry="3.5"/>
+      <circle cx="94" cy="29" r="1" fill="#000"/>
+      <!-- Body -->
+      <ellipse cx="42" cy="54" rx="24" ry="10"/>
+      <!-- Very long tail -->
+      <path d="M 20,52 L 4,54 L 0,52 L 4,58 L 22,58 Z"/>
+      <!-- Legs -->
+      <rect x="24" y="62" width="6" height="14"/>
+      <rect x="36" y="62" width="6" height="14"/>
+      <rect x="48" y="62" width="6" height="14"/>
+      <rect x="58" y="62" width="6" height="14"/>
+    </svg>`
+  },
+];
+
+// ─── State ───
+const state = {
+  cards: [], flipped: [], matched: 0, locked: false,
+  numPlayers: 2, difficulty: 'easy', turnTimeLimit: 30,
+  scores: [0, 0], currentPlayer: 0,
+  turnEndAt: 0, turnTimerId: null, sessionStart: 0, timerId: null,
+  pendingMatch: null, // {dino, scorer} — เก็บ dino ที่จับคู่ได้ระหว่างเปิดข้อมูล
+};
+const PLAYER_AVATARS = ['🦖', '🦕'];
+const PLAYER_NAMES = ['ผู้เล่น 1', 'ผู้เล่น 2'];
+
+const DIFFICULTY = { easy: 6, medium: 8, hard: 10 };
+
+// ─── Audio ───
+const audio = {
+  ctx: null,
+  enabled: true,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  beep(freq, duration, type = 'sine', volume = 0.15, startAt = 0) {
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime + startAt;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + duration);
+  },
+  flip()  { this.beep(420, 0.08, 'triangle', 0.10); },
+  match() {
+    this.beep(523, 0.12, 'sine', 0.18, 0);
+    this.beep(659, 0.12, 'sine', 0.18, 0.10);
+    this.beep(784, 0.20, 'sine', 0.18, 0.20);
+  },
+  fail()  { this.beep(220, 0.20, 'sine', 0.12); },
+  win()   { [523, 659, 784, 1047, 1319].forEach((f, i) => this.beep(f, 0.25, 'triangle', 0.2, i * 0.12)); },
+
+  // ─── Roar synth: low-freq sweep + filtered noise ───
+  roar(params) {
+    if (!this.enabled || !this.ctx) return;
+    const c = this.ctx;
+    const now = c.currentTime;
+    const dur = params.dur || 1.0;
+
+    // 1) ความถี่หลัก (โทนคำราม) — sweep ลงเรื่อย ๆ
+    const osc = c.createOscillator();
+    osc.type = params.type || 'sawtooth';
+    osc.frequency.setValueAtTime(params.f0, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(params.f1, 20), now + dur * 0.4);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(params.f2 || params.f1 * 0.7, 20), now + dur);
+
+    // 2) noise (เนื้อเสียงครืดคราด)
+    const bufferSize = Math.floor(c.sampleRate * dur);
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+    const noise = c.createBufferSource();
+    noise.buffer = buffer;
+    const noiseFilter = c.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = (params.f0 + params.f1) * 1.5;
+    noiseFilter.Q.value = 1.4;
+
+    // 3) Lowpass filter ปลายทาง เก็บโทนต่ำ
+    const lowpass = c.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = Math.max(params.f0 * 8, 600);
+
+    // 4) Envelope
+    const oscGain = c.createGain();
+    oscGain.gain.value = 0.55;
+    const noiseGain = c.createGain();
+    noiseGain.gain.value = (params.noise || 0.4);
+
+    const mix = c.createGain();
+    mix.gain.setValueAtTime(0, now);
+    mix.gain.linearRampToValueAtTime(params.volume || 0.32, now + 0.05);
+    mix.gain.linearRampToValueAtTime(params.volume || 0.32, now + dur * 0.75);
+    mix.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    osc.connect(oscGain).connect(mix);
+    noise.connect(noiseFilter).connect(noiseGain).connect(mix);
+    mix.connect(lowpass).connect(c.destination);
+
+    osc.start(now); osc.stop(now + dur);
+    noise.start(now); noise.stop(now + dur);
+  },
+};
+document.addEventListener('pointerdown', () => audio.init(), { once: false, capture: true });
+
+function toggleSound() {
+  audio.enabled = !audio.enabled;
+  if (typeof AudioPlayer !== 'undefined') AudioPlayer.setEnabled(audio.enabled);
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = audio.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !audio.enabled);
+  if (audio.enabled) audio.init();
+}
+
+// ─── Utility ───
+function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
+function pickGrid(n) {
+  // n = จำนวนคู่ (6/8/10)
+  const layouts = {
+    6:  [[4, 3], [3, 4]],   // 12 cards
+    8:  [[4, 4], [8, 2]],   // 16
+    10: [[5, 4], [4, 5]],   // 20
+  };
+  const opts = layouts[n] || [[4, 4]];
+  // เลือกแบบที่เหมาะ landscape vs portrait
+  const portrait = window.innerHeight > window.innerWidth;
+  return portrait ? opts[opts.length - 1] : opts[0];
+}
+
+// ─── เกมหลัก ───
+function newGame() {
+  const pairs = DIFFICULTY[state.difficulty] || 6;
+  const chosen = shuffle([...DINOS]).slice(0, pairs);
+  state.cards = [...chosen, ...chosen]
+    .map((d, i) => ({ ...d, id: i }))
+    .sort(() => Math.random() - 0.5);
+  state.flipped = [];
+  state.matched = 0;
+  state.locked = false;
+  state.scores = [0, 0];
+  state.currentPlayer = 0;
+  state.sessionStart = Date.now();
+  startSessionTimer();
+  renderPlayers();
+  renderBoard();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('players');
+  el.innerHTML = '';
+  for (let i = 0; i < state.numPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = `player p${i+1} ${state.currentPlayer === i ? 'active' : ''}`;
+    const showTime = state.numPlayers === 2 && state.turnTimeLimit > 0 && state.currentPlayer === i;
+    div.innerHTML = `
+      <div class="player-avatar">${PLAYER_AVATARS[i]}</div>
+      <div class="player-info">
+        <div class="player-name">${PLAYER_NAMES[i]}</div>
+        <div class="player-score">${state.scores[i]} คู่</div>
+      </div>
+      ${showTime ? '<div class="player-time" id="playerTime">--</div>' : ''}`;
+    el.appendChild(div);
+  }
+  if (state.numPlayers === 2 && state.turnTimeLimit > 0) startTurnTimer();
+}
+
+function startSessionTimer() {
+  clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    const s = Math.floor((Date.now() - state.sessionStart) / 1000);
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${mm}:${ss}`;
+  }, 250);
+}
+
+function startTurnTimer() {
+  clearInterval(state.turnTimerId);
+  state.turnEndAt = Date.now() + state.turnTimeLimit * 1000;
+  state.turnTimerId = setInterval(() => {
+    const left = Math.max(0, Math.ceil((state.turnEndAt - Date.now()) / 1000));
+    const el = document.getElementById('playerTime');
+    if (el) {
+      el.textContent = `${left}s`;
+      el.classList.toggle('urgent', left <= 5);
+    }
+    if (left <= 0) {
+      clearInterval(state.turnTimerId);
+      // หมดเวลา — สลับตา
+      audio.fail();
+      switchPlayer();
+    }
+  }, 200);
+}
+
+function pauseTurn() { clearInterval(state.turnTimerId); }
+
+function switchPlayer() {
+  state.currentPlayer = 1 - state.currentPlayer;
+  renderPlayers();
+}
+
+function renderBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  if (state.cards.length === 0) return;
+  const [cols, rows] = pickGrid(state.cards.length / 2);
+  el.style.setProperty('--cols', cols);
+
+  state.cards.forEach((card, idx) => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.dataset.idx = idx;
+    div.onclick = () => flipCard(idx, div);
+    div.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-back">${idx + 1}</div>
+        <div class="card-face card-front" style="color:${card.color}">
+          ${card.svg}
+          <div class="card-name">${card.th}</div>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+window.addEventListener('orientationchange', () => state.cards.length && renderBoard());
+
+function flipCard(idx, el) {
+  if (state.locked) return;
+  if (el.classList.contains('flipped') || el.classList.contains('matched')) return;
+  if (state.flipped.length >= 2) return;
+
+  el.classList.add('flipped');
+  audio.flip();
+  state.flipped.push({ idx, el });
+
+  if (state.flipped.length === 2) {
+    state.locked = true;
+    pauseTurn();
+    const [a, b] = state.flipped;
+    if (state.cards[a.idx].key === state.cards[b.idx].key) {
+      // จับคู่ได้!
+      setTimeout(() => {
+        a.el.classList.add('matched');
+        b.el.classList.add('matched');
+        const dino = state.cards[a.idx];
+        audio.match();
+        audio.roar(dino.roar);
+        state.scores[state.currentPlayer]++;
+        state.matched++;
+        renderPlayers();
+        showFactCard(dino);
+        state.flipped = [];
+        if (state.matched === state.cards.length / 2) {
+          setTimeout(showWinner, 500);
+        }
+      }, 400);
+    } else {
+      // ไม่ตรง
+      setTimeout(() => {
+        a.el.classList.remove('flipped');
+        b.el.classList.remove('flipped');
+        audio.fail();
+        state.flipped = [];
+        state.locked = false;
+        if (state.numPlayers === 2) switchPlayer();
+      }, 1000);
+    }
+  }
+}
+
+function showFactCard(dino) {
+  document.getElementById('factSvg').innerHTML = `<div style="color:${dino.color}; width:100%; height:100%;">${dino.svg}</div>`;
+  document.getElementById('factNameTh').textContent = dino.th;
+  document.getElementById('factNameEn').textContent = dino.en;
+  document.getElementById('factTag').textContent = dino.tag;
+  document.getElementById('factText').textContent = dino.fact;
+  document.getElementById('factModal').classList.add('show');
+
+  // ออกเสียงชื่อไดโนผ่าน Premwadee (ถ้ามี AudioPlayer)
+  if (typeof AudioPlayer !== 'undefined') {
+    AudioPlayer.speak(dino.th, 'th');
+  }
+}
+
+function closeFactModal() {
+  document.getElementById('factModal').classList.remove('show');
+  state.locked = false;
+  // ใน 2-player ถ้าจับคู่ได้ ผู้เล่นคนเดิมเล่นต่อ — ไม่สลับ
+  if (state.numPlayers === 2 && state.matched < state.cards.length / 2) startTurnTimer();
+}
+
+function showWinner() {
+  audio.win();
+  clearInterval(state.timerId);
+  pauseTurn();
+  const modal = document.getElementById('winnerModal');
+  const emoji = document.getElementById('winnerEmoji');
+  const title = document.getElementById('winnerTitle');
+  const sub = document.getElementById('winnerSubtitle');
+
+  if (state.numPlayers === 1) {
+    emoji.textContent = '🏆';
+    title.textContent = 'เก่งมาก!';
+    sub.textContent = `จับคู่ครบ ${state.matched} คู่ในเวลา ${document.getElementById('timer').textContent}`;
+  } else {
+    const [s1, s2] = state.scores;
+    if (s1 > s2) {
+      emoji.textContent = PLAYER_AVATARS[0];
+      title.textContent = `${PLAYER_NAMES[0]} ชนะ!`;
+      sub.textContent = `${s1} คู่ vs ${s2} คู่`;
+    } else if (s2 > s1) {
+      emoji.textContent = PLAYER_AVATARS[1];
+      title.textContent = `${PLAYER_NAMES[1]} ชนะ!`;
+      sub.textContent = `${s2} คู่ vs ${s1} คู่`;
+    } else {
+      emoji.textContent = '🤝';
+      title.textContent = 'เสมอกัน!';
+      sub.textContent = `${s1} คู่ เท่ากัน`;
+    }
+  }
+  modal.classList.add('show');
+  launchConfetti();
+}
+
+function closeWinner() { document.getElementById('winnerModal').classList.remove('show'); }
+
+function launchConfetti() {
+  const colors = ['#D2691E', '#4F7942', '#C46A30', '#7AA5C8', '#FFD93D'];
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDelay = Math.random() * 0.5 + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3500);
+  }
+}
+
+// ─── Settings ───
+function openSettings()  { document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+function applySettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  newGame();
+}
+
+document.querySelectorAll('.option-buttons').forEach(group => {
+  group.addEventListener('click', e => {
+    const btn = e.target.closest('.option-btn');
+    if (!btn) return;
+    group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (group.id === 'playerOptions') state.numPlayers = parseInt(btn.dataset.value);
+    else if (group.id === 'difficultyOptions') state.difficulty = btn.dataset.value;
+    else if (group.id === 'timeOptions') state.turnTimeLimit = parseInt(btn.dataset.value);
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>
