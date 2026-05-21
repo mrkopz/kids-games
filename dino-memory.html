@@ -813,9 +813,9 @@ function showFactCard(dino) {
   document.getElementById('factText').textContent = dino.fact;
   document.getElementById('factModal').classList.add('show');
 
-  // ออกเสียงชื่อไดโนผ่าน Premwadee (ถ้ามี AudioPlayer)
+  // ออกเสียงชื่อไดโน — เล่นไฟล์ Premwadee Neural ที่ pre-render ไว้ (เหมือน learn-abc) — fallback Web TTS ถ้าไฟล์หาย
   if (typeof AudioPlayer !== 'undefined') {
-    AudioPlayer.speak(dino.th, 'th');
+    AudioPlayer.playOrSpeak([`audio/dinos/voice/${dino.key}.mp3`], dino.th, 'th');
   }
 }
 
