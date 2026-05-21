@@ -162,6 +162,12 @@ a.icon-btn { text-decoration: none; color: var(--text); }
   perspective: 1000px;
   cursor: pointer;
   position: relative;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.card.gone {
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
 }
 .card-inner {
   width: 100%;
@@ -1169,6 +1175,8 @@ function showFactCard(dino) {
 
 function closeFactModal() {
   document.getElementById('factModal').classList.remove('show');
+  // จางการ์ดที่จับคู่แล้วให้หายไปจากกระดาน (เก็บที่ว่างไว้)
+  document.querySelectorAll('.card.matched:not(.gone)').forEach(c => c.classList.add('gone'));
   state.locked = false;
   // ใน 2-player ถ้าจับคู่ได้ ผู้เล่นคนเดิมเล่นต่อ — ไม่สลับ
   if (state.numPlayers === 2 && state.matched < state.cards.length / 2) startTurnTimer();
