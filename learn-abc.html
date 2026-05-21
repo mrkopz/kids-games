@@ -371,12 +371,30 @@ const audio = {
 };
 if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 
+// ─── เล่นไฟล์ MP3 (เสียงคนจริง/Neural ที่ pre-render ไว้) — fallback ไป Web TTS ถ้าไฟล์ไม่มี ───
+let currentAudio = null;
+function playFileOrSpeak(src, fallback) {
+  if (!audio.enabled) return;
+  if (currentAudio) { try { currentAudio.pause(); } catch {} currentAudio = null; }
+  const a = new Audio();
+  currentAudio = a;
+  let fellBack = false;
+  const fail = () => { if (fellBack) return; fellBack = true; currentAudio = null; fallback && fallback(); };
+  a.addEventListener('error', fail, { once: true });
+  a.src = src;
+  const p = a.play();
+  if (p && p.catch) p.catch(fail);
+}
+
 function toggleSound() {
   audio.enabled = !audio.enabled;
   const btn = document.getElementById('soundToggle');
   btn.textContent = audio.enabled ? '🔊' : '🔇';
   btn.classList.toggle('muted', !audio.enabled);
-  if (!audio.enabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+  if (!audio.enabled) {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (currentAudio) { try { currentAudio.pause(); } catch {} currentAudio = null; }
+  }
 }
 
 // กันจอซูมบน iPad เวลาเด็กกดเร็วๆ
@@ -413,11 +431,19 @@ function render() {
 function speakCurrent() {
   const d = data()[idx];
   if (setKey === 'th') {
-    const say = d.rhyme
-      ? `${d.name} ${d.thing} ${d.rhyme}`         // "ขอ ไข่ ในเล้า"
-      : `${d.name} เอ๋ย ${d.name} ${d.thing}`;    // "กอ เอ๋ย กอ ไก่"
-    audio.speak(say, 'th');
-  } else audio.speak(`${d.ch} says ${d.snd}, ${d.snd}, ${d.word}.`, 'en'); // "A says ah, ah, Apple"
+    // ลองไฟล์ MP3 (เสียง Premwadee จาก Azure ที่ pre-render ไว้) → fallback Web TTS ถ้าไม่มี
+    const i = String(idx + 1).padStart(2, '0');
+    playFileOrSpeak(`audio/th/${i}.mp3`, () => {
+      const say = d.rhyme
+        ? `${d.name} ${d.thing} ${d.rhyme}`        // "ขอ ไข่ ในเล้า"
+        : `${d.name} เอ๋ย ${d.name} ${d.thing}`;   // "กอ เอ๋ย กอ ไก่"
+      audio.speak(say, 'th');
+    });
+  } else {
+    playFileOrSpeak(`audio/en/${d.ch.toLowerCase()}.mp3`, () => {
+      audio.speak(`${d.ch} says ${d.snd}, ${d.snd}, ${d.word}.`, 'en'); // "A says ah, ah, Apple"
+    });
+  }
 }
 
 function next() { idx = (idx + 1) % data().length; render(); }
