@@ -7,8 +7,57 @@
 window.AudioPlayer = (function () {
   let enabled = true;
   let token = 0;
-  // pending = ฟังก์ชัน cancel ของ playOne ที่ยังค้างอยู่ — stop() จะเรียกเพื่อหยุดเล่นจริง ๆ
-  const pending = new Set();
+  const pending = new Set();  // cancel fns ของ playback ที่ยังเล่นอยู่
+
+  // ─── Web Audio context (สำหรับ gapless playback) ───
+  let audioCtx = null;
+  function ctx() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      try { audioCtx.resume(); } catch {}
+    }
+    return audioCtx;
+  }
+  // unlock context จาก user gesture (iOS)
+  function _unlock() { ctx(); }
+  document.addEventListener('pointerdown', _unlock, { capture: true });
+  document.addEventListener('touchstart', _unlock, { capture: true, passive: true });
+
+  // ─── decode + cache เก็บ AudioBuffer ของแต่ละ URL ───
+  const bufCache = new Map();
+  async function loadBuffer(url) {
+    if (bufCache.has(url)) return bufCache.get(url);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ab = await r.arrayBuffer();
+    const c = ctx();
+    if (!c) throw new Error('no AudioContext');
+    // Safari เก่าต้องใช้ callback form, ใหม่รองรับทั้ง promise
+    const buf = await new Promise((resolve, reject) => {
+      const ret = c.decodeAudioData(ab, resolve, reject);
+      if (ret && typeof ret.then === 'function') ret.then(resolve, reject);
+    });
+    bufCache.set(url, buf);
+    return buf;
+  }
+
+  // ─── ตัด silence ที่หัว/ท้าย buffer (ลด gap ระหว่างคลิปต่อ ๆ กัน) ───
+  // คืน [offset, duration] วินาที สำหรับใช้กับ AudioBufferSourceNode.start()
+  function trimRange(buf, threshold = 0.012) {
+    const data = buf.getChannelData(0);
+    let s = 0, e = data.length - 1;
+    while (s < e && Math.abs(data[s]) < threshold) s++;
+    while (e > s && Math.abs(data[e]) < threshold) e--;
+    // เหลือ guard เล็ก ๆ ที่ขอบเพื่อไม่ตัดเสียงพยัญชนะต้นคำ
+    const guardHead = Math.floor(buf.sampleRate * 0.015); // 15ms
+    const guardTail = Math.floor(buf.sampleRate * 0.025); // 25ms
+    s = Math.max(0, s - guardHead);
+    e = Math.min(data.length, e + guardTail);
+    return [s / buf.sampleRate, (e - s) / buf.sampleRate];
+  }
 
   function stop() {
     token++;
@@ -24,33 +73,54 @@ window.AudioPlayer = (function () {
     if (!v) stop();
   }
 
-  // ผลของ playOne / playSequence: 'ok' = เล่นจบ, 'error' = ไฟล์มีปัญหา, 'cancelled' = โดน stop() แทรก
-  function playOne(url, myToken) {
-    return new Promise(resolve => {
-      if (myToken !== token) return resolve('cancelled');
-      const a = new Audio(url);
-      const cancel = () => { try { a.pause(); a.src = ''; } catch {} ; resolve('cancelled'); };
-      pending.add(cancel);
-      const done = (kind) => {
-        pending.delete(cancel);
-        resolve(myToken !== token ? 'cancelled' : kind);
-      };
-      a.onended = () => done('ok');
-      a.onerror = () => done('error');
-      a.play().catch(() => done('error'));
-    });
-  }
-
-  // เล่น URL ต่อกัน คืน Promise<'ok'|'error'|'cancelled'>
+  // เล่น URL ต่อกันแบบ gapless ด้วย Web Audio API — sample-accurate ไม่มี gap ระหว่างคลิป
+  // คืน Promise<'ok'|'error'|'cancelled'>
   async function playSequence(urls) {
     if (!enabled) return 'cancelled';
     stop();
     const myToken = token;
-    for (const url of urls) {
-      if (myToken !== token) return 'cancelled';
-      const r = await playOne(url, myToken);
-      if (r !== 'ok') return r;
+    const c = ctx();
+    if (!c) return 'error';
+
+    // โหลด+decode คลิปทั้งหมดพร้อมกัน
+    let buffers;
+    try {
+      buffers = await Promise.all(urls.map(loadBuffer));
+    } catch (e) {
+      return 'error';
     }
+    if (myToken !== token) return 'cancelled';
+
+    // schedule แบบ sample-accurate ใช้ trimRange ลบ silence
+    let when = c.currentTime + 0.04; // lead-in สั้น ๆ
+    const sources = [];
+    for (const buf of buffers) {
+      const [offset, dur] = trimRange(buf);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.connect(c.destination);
+      src.start(when, offset, dur);
+      sources.push(src);
+      when += dur;
+    }
+
+    let cancelled = false;
+    let wakeWait;
+    const waitDone = new Promise(res => { wakeWait = res; });
+    const cancel = () => {
+      cancelled = true;
+      for (const s of sources) { try { s.stop(); } catch {} }
+      wakeWait();
+    };
+    pending.add(cancel);
+
+    const totalMs = (when - c.currentTime) * 1000;
+    const timer = setTimeout(wakeWait, totalMs);
+    await waitDone;
+    clearTimeout(timer);
+    pending.delete(cancel);
+
+    if (cancelled || myToken !== token) return 'cancelled';
     return 'ok';
   }
 
