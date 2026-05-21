@@ -119,6 +119,16 @@ h1 {
   line-height: 1;
   filter: drop-shadow(0 6px 10px rgba(45, 49, 66, 0.15));
 }
+.game-emoji.img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-emoji.img img {
+  width: clamp(4rem, 16vw, 6.5rem);
+  height: clamp(4rem, 16vw, 6.5rem);
+  object-fit: contain;
+}
 
 .game-title {
   font-size: clamp(1.3rem, 4.5vw, 1.7rem);
@@ -186,7 +196,7 @@ footer {
     </a>
 
     <a class="game-card" href="dino-memory.html">
-      <div class="game-emoji">🦖</div>
+      <div class="game-emoji img"><img src="images/dinos/trex.webp" alt="T-Rex"></div>
       <div class="game-title">จับคู่ไดโนเสาร์</div>
       <div class="game-desc">จับคู่ T-Rex และไดโนเสาร์ 10 ตัว ฟังเสียงคำราม + เรียนเกร็ดความรู้</div>
       <span class="game-tag">ไดโนเสาร์</span>
