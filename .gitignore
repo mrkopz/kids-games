@@ -1,1 +1,9 @@
 .claude/settings.local.json
+
+# secrets — API keys, tokens
+.env
+.env.*
+!.env.example
+
+# node
+node_modules/
