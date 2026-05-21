@@ -286,6 +286,31 @@ function buildMathTasks() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// DINO NAMES — เสียงพูดชื่อไดโนเสาร์ (Premwadee) เล่นตอนจับคู่ได้
+// ═══════════════════════════════════════════════════════════════════
+
+const DINO_NAMES = [
+  { key:'trex',    th:'ไทรันโนซอรัส' },
+  { key:'tri',     th:'ไทรเซอราทอปส์' },
+  { key:'brachio', th:'บราคิโอซอรัส' },
+  { key:'stego',   th:'สเตโกซอรัส' },
+  { key:'velo',    th:'เวโลซิแรปเตอร์' },
+  { key:'ptero',   th:'เทอราโนดอน' },
+  { key:'spino',   th:'สไปโนซอรัส' },
+  { key:'anky',    th:'แอนคิโลซอรัส' },
+  { key:'para',    th:'พาราซอโรโลฟัส' },
+  { key:'diplo',   th:'ดิปโพลโดคัส' },
+];
+
+function buildDinoTasks() {
+  return DINO_NAMES.map(d => ({
+    out: path.join(repoRoot, 'audio/dinos/voice', `${d.key}.mp3`),
+    ssml: ssml(VOICES.alphabetTh, 'th-TH', d.th, -15),  // Premwadee, ช้าหน่อยให้ฟังชัด
+    label: `dino voice ${d.key} (${d.th})`,
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Run
 // ═══════════════════════════════════════════════════════════════════
 
@@ -294,6 +319,7 @@ async function main() {
   if (!ONLY || ONLY === 'alphabet') tasks.push(...buildAlphabetTasks());
   if (!ONLY || ONLY === 'words')    tasks.push(...await buildWordTasks());
   if (!ONLY || ONLY === 'math')     tasks.push(...buildMathTasks());
+  if (!ONLY || ONLY === 'dinos')    tasks.push(...buildDinoTasks());
 
   console.log(`\nวางแผนสร้าง ${tasks.length} ไฟล์${ONLY ? ` (เฉพาะ ${ONLY})` : ''}\n`);
 
