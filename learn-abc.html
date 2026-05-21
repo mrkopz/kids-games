@@ -443,14 +443,14 @@ function speakCurrent() {
   if (setKey === 'th') {
     // ลองไฟล์ MP3 (เสียง Premwadee จาก Azure ที่ pre-render ไว้) → fallback Web TTS ถ้าไม่มี
     const i = String(idx + 1).padStart(2, '0');
-    playFileOrSpeak(`audio/th/${i}.mp3`, () => {
+    playFileOrSpeak(`audio/alphabet/th/${i}.mp3`, () => {
       const say = d.rhyme
         ? `${d.name} ${d.thing} ${d.rhyme}`        // "ขอ ไข่ ในเล้า"
         : `${d.name} เอ๋ย ${d.name} ${d.thing}`;   // "กอ เอ๋ย กอ ไก่"
       audio.speak(say, 'th');
     });
   } else {
-    playFileOrSpeak(`audio/en/${d.ch.toLowerCase()}.mp3`, () => {
+    playFileOrSpeak(`audio/alphabet/en/${d.ch.toLowerCase()}.mp3`, () => {
       audio.speak(`${d.ch} says ${d.snd}, ${d.snd}, ${d.word}.`, 'en'); // "A says ah, ah, Apple"
     });
   }
