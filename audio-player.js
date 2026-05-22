@@ -222,6 +222,7 @@ window.AudioPlayer = (function () {
   return {
     setEnabled, stop, playSequence, speak, playOrSpeak,
     thaiNumberUrls, englishNumberUrls,
+    getContext: ctx, // แชร์ AudioContext เดียวกันให้เกมใช้เล่น beep (iOS เล่นเพี้ยนถ้ามีหลาย context)
     get enabled() { return enabled; },
   };
 })();

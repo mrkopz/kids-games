@@ -438,33 +438,31 @@ const state = {
 };
 
 // ─── Audio (Web Audio beeps + AudioPlayer for voice) ───
+// ใช้ AudioContext ตัวเดียวกับ AudioPlayer — iOS Safari เล่นเสียงเพี้ยน/เงียบเมื่อมีหลาย context
+// และ AudioPlayer ปลดล็อก context นั้นจาก gesture แรกให้แล้ว (resume + silent buffer)
 const audio = {
-  ctx:null, enabled:true,
-  init() {
-    if (!this.ctx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) this.ctx = new AC();
-    }
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  enabled:true,
+  ctx() {
+    return (typeof AudioPlayer !== 'undefined' && AudioPlayer.getContext) ? AudioPlayer.getContext() : null;
   },
   beep(freq, dur, type='sine', vol=0.15, delay=0) {
-    if (!this.enabled || !this.ctx) return;
-    const t = this.ctx.currentTime + delay;
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
+    const c = this.ctx();
+    if (!this.enabled || !c) return;
+    const t = c.currentTime + delay;
+    const osc = c.createOscillator();
+    const g = c.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(vol, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    osc.connect(g).connect(this.ctx.destination);
+    osc.connect(g).connect(c.destination);
     osc.start(t); osc.stop(t + dur);
   },
   good() { this.beep(523, 0.12, 'sine', 0.18, 0); this.beep(659, 0.12, 'sine', 0.18, 0.1); this.beep(784, 0.20, 'sine', 0.18, 0.2); },
   bad()  { this.beep(220, 0.20, 'sine', 0.12); },
   win()  { [523, 659, 784, 1047, 1319].forEach((f,i) => this.beep(f, 0.25, 'triangle', 0.2, i*0.12)); },
 };
-document.addEventListener('pointerdown', () => audio.init(), { once:false, capture:true });
 
 function toggleSound() {
   audio.enabled = !audio.enabled;
@@ -472,7 +470,7 @@ function toggleSound() {
   const btn = document.getElementById('soundToggle');
   btn.textContent = audio.enabled ? '🔊' : '🔇';
   btn.classList.toggle('muted', !audio.enabled);
-  if (audio.enabled) audio.init();
+  if (audio.enabled) audio.ctx(); // resume context จาก gesture ปุ่ม (เผื่อ iOS suspend ไว้)
 }
 
 // ─── Utility ───
@@ -599,13 +597,16 @@ function handleDrop(foodEl) {
     setTimeout(() => zone.classList.remove('happy'), 600);
     state.score++;
     miniConfetti();
-    if (typeof AudioPlayer !== 'undefined') {
-      AudioPlayer.playOrSpeak(['audio/feed/yum.mp3'], 'อร่อยมาก ขอบคุณนะ', 'th');
-    }
-    setTimeout(() => {
+    // รอให้เสียงรางวัล "ขอบคุณนะ" เล่นจบก่อนค่อยขึ้นไดโนตัวถัดไป กันเสียงชื่อไดโนตัวใหม่ไปตัด
+    // (ระหว่างนี้ board ถูก lock อยู่ จึงไม่มีเสียงอื่นมาซ้อน) — อย่างน้อย 1.2s เพื่อให้แอนิเมชันกินอาหารจบ
+    const rewardDone = (typeof AudioPlayer !== 'undefined')
+      ? AudioPlayer.playOrSpeak(['audio/feed/yum.mp3'], 'อร่อยมาก ขอบคุณนะ', 'th')
+      : Promise.resolve();
+    const minWait = new Promise(res => setTimeout(res, 1200));
+    Promise.all([rewardDone, minWait]).then(() => {
       state.round++;
       nextRound();
-    }, 1400);
+    });
   } else {
     // ผิด: เด้งกลับ + เขย่า + เสียง "ไม่ใช่นะ"
     foodEl.style.transition = 'transform 0.3s ease-out';
