@@ -151,14 +151,17 @@ a.icon-btn { text-decoration: none; color: var(--text); }
   flex: 1;
   display: grid;
   grid-template-columns: repeat(var(--cols, 4), 1fr);
+  grid-template-rows: repeat(var(--rows, 3), 1fr);
   gap: 10px;
   padding: 4px;
   min-height: 0;
+  overflow: hidden;          /* กันการ์ดล้นไปทับ header/controls */
+  justify-content: center;
   align-content: center;
 }
 
 .card {
-  aspect-ratio: 3 / 4;
+  min-height: 0;             /* ให้ย่อตามเซลล์ของ grid ได้ */
   perspective: 1000px;
   cursor: pointer;
   position: relative;
@@ -573,15 +576,24 @@ const audio = {
   fail()  { this.beep(220, 0.20, 'sine', 0.12); },
   win()   { [523, 659, 784, 1047, 1319].forEach((f, i) => this.beep(f, 0.25, 'triangle', 0.2, i * 0.12)); },
 
-  // ─── Roar: เล่นไฟล์ MP3/OGG (CC0 จาก OpenGameArt) — fallback synth ถ้าไฟล์โหลดไม่ขึ้น ───
+  // ─── Roar: เล่นไฟล์ MP3 (CC0 จาก OpenGameArt) — fallback synth ถ้าไฟล์โหลดไม่ขึ้น ───
+  // ใช้ Audio element เดียวที่ปลดล็อกจาก gesture แรก (iOS) แทนการสร้างใหม่ทุกครั้ง
   _roarAudio: null,
+  initRoar() {
+    if (this._roarAudio) return;
+    this._roarAudio = new Audio();
+    this._roarAudio.volume = 0;
+    // เล่นเงียบ ๆ ใน gesture เพื่อปลดล็อก HTMLAudio บน iOS
+    this._roarAudio.play().catch(() => {});
+  },
   roarFile(url, fallbackSynth) {
     if (!this.enabled) return;
-    if (this._roarAudio) { try { this._roarAudio.pause(); } catch {} this._roarAudio = null; }
-    const a = new Audio(url);
+    const a = this._roarAudio || (this._roarAudio = new Audio());
+    try { a.pause(); } catch {}
+    a.onerror = () => { if (fallbackSynth) this.roar(fallbackSynth); };
     a.volume = 0.55;
-    this._roarAudio = a;
-    a.addEventListener('error', () => { if (fallbackSynth) this.roar(fallbackSynth); }, { once: true });
+    a.src = url;
+    a.currentTime = 0;
     a.play().catch(() => { if (fallbackSynth) this.roar(fallbackSynth); });
   },
 
@@ -636,7 +648,7 @@ const audio = {
     noise.start(now); noise.stop(now + dur);
   },
 };
-document.addEventListener('pointerdown', () => audio.init(), { once: false, capture: true });
+document.addEventListener('pointerdown', () => { audio.init(); audio.initRoar(); }, { once: false, capture: true });
 
 function toggleSound() {
   audio.enabled = !audio.enabled;
@@ -741,6 +753,7 @@ function renderBoard() {
   if (state.cards.length === 0) return;
   const [cols, rows] = pickGrid(state.cards.length / 2);
   el.style.setProperty('--cols', cols);
+  el.style.setProperty('--rows', rows);
 
   state.cards.forEach((card, idx) => {
     const div = document.createElement('div');
@@ -780,8 +793,8 @@ function flipCard(idx, el) {
         b.el.classList.add('matched');
         const dino = state.cards[a.idx];
         audio.match();
-        // เล่นเสียงคำรามจริง (CC0) — fallback ไป synth ถ้าไฟล์โหลดไม่ขึ้น
-        audio.roarFile(`audio/dinos/${dino.key}.ogg`, dino.roar);
+        // เล่นเสียงคำรามจริง (CC0, mp3 รองรับ iOS) — fallback ไป synth ถ้าไฟล์โหลดไม่ขึ้น
+        audio.roarFile(`audio/dinos/${dino.key}.mp3`, dino.roar);
         state.scores[state.currentPlayer]++;
         state.matched++;
         renderPlayers();
