@@ -22,9 +22,33 @@ window.AudioPlayer = (function () {
     return audioCtx;
   }
   // unlock context จาก user gesture (iOS)
-  function _unlock() { ctx(); }
+  // iOS ต้อง resume() + เล่น silent buffer ใน gesture จริง ๆ ไม่งั้นเสียงที่เล่นใน setTimeout ภายหลังจะเงียบ
+  let _unlockedAudio = false;
+  function _unlock() {
+    const c = ctx();
+    if (!c) return;
+    if (c.state === 'suspended') { try { c.resume(); } catch {} }
+    if (_unlockedAudio) return;
+    try {
+      const b = c.createBuffer(1, 1, 22050);
+      const s = c.createBufferSource();
+      s.buffer = b;
+      s.connect(c.destination);
+      s.start(0);
+      _unlockedAudio = true;
+    } catch {}
+    // ปลดล็อก SpeechSynthesis ด้วย (fallback path) — พูดข้อความว่างใน gesture
+    try {
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance('');
+        u.volume = 0;
+        speechSynthesis.speak(u);
+      }
+    } catch {}
+  }
   document.addEventListener('pointerdown', _unlock, { capture: true });
   document.addEventListener('touchstart', _unlock, { capture: true, passive: true });
+  document.addEventListener('click', _unlock, { capture: true });
 
   // ─── decode + cache เก็บ AudioBuffer ของแต่ละ URL ───
   const bufCache = new Map();
